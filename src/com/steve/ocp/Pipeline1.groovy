@@ -12,6 +12,8 @@ def runPipeline(def params) {
     artifactName = "${pom.name}"
     artifactVersion = "${pom.version}"
 
+    ocpConfig = new Yaml().load(new FileInputStream(new File("$WORKSPACE/ocp/config.yml")))
+
     stage('Build') {
       // Run the maven test
       if (isUnix()) {
@@ -61,7 +63,7 @@ def runPipeline(def params) {
             def fileName
             Object data
 
-  					fileName = "$WORKSPACE/ocp/dev/${params.configMapRef}.yml"
+  					fileName = "$WORKSPACE/ocp/dev/${ocpConfig.configMapRef}.yml"
             data = new Yaml().load(new FileInputStream(new File(fileName)))
 
   				  if(new File(fileName).exists()) {
@@ -71,19 +73,19 @@ def runPipeline(def params) {
                 data.metadata.labels = [:]
               }
   						data.metadata.labels['application'] = "${params.projectName}"
-  	    			data.metadata.name = "${params.configMapRef}"
-              prereqs = openshift.selector( "configmap", "${params.configMapRef}" )
+  	    			data.metadata.name = "${ocpConfig.configMapRef}"
+              prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
               if(!prereqs.exists()) {
-                println "ConfigMap ${params.configMapRef} doesn't exist, creating now"
+                println "ConfigMap ${ocpConfig.configMapRef} doesn't exist, creating now"
                 openshift.create(data)
               }
               else {
-                println "ConfigMap ${params.configMapRef} exists, updating now"
+                println "ConfigMap ${ocpConfig.configMapRef} exists, updating now"
                 openshift.apply(data)
               }
   					}
 
-            fileName = "$WORKSPACE/ocp/dev/${params.secretKeyRef}.yml"
+            fileName = "$WORKSPACE/ocp/dev/${ocpConfig.secretKeyRef}.yml"
   					if(new File(fileName).exists()) {
               data = new Yaml().load(new FileInputStream(new File(fileName)))
               // Sanitize config map by removing namespace
@@ -92,14 +94,14 @@ def runPipeline(def params) {
                 data.metadata.labels = [:]
               }
       				data.metadata.labels['application'] = "${params.projectName}"
-  						data.metadata.name = "${params.secretKeyRef}"
-              prereqs = openshift.selector( "secret", "${params.secretKeyRef}" )
+  						data.metadata.name = "${ocpConfig.secretKeyRef}"
+              prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
               if(!prereqs.exists()) {
-                println "Secret ${params.secretKeyRef} doesn't exist, creating now"
+                println "Secret ${ocpConfig.secretKeyRef} doesn't exist, creating now"
                 openshift.create(data)
               }
               else {
-                println "Secret ${params.secretKeyRef} exists, updating now"
+                println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
                 openshift.apply(data)
               }
   					}
@@ -111,7 +113,7 @@ def runPipeline(def params) {
           stage('Process Template') {
   				    if(!objectsExist) {
   						      // TODO loop through this to process each parameter
-  						      openshift.create(templateSelector.process("stevetemplate", "-p", "APP_NAME=${params.projectName}", "-p", "APP_NAMESPACE=${params.ocpnamespace}", "-p", "CONFIG_MAP_REF=${params.configMapRef}", "-p", "SECRET_KEY_REF=${params.secretKeyRef}", "-p", "READINESS_PROBE=${params.readinessProbe}", "-p", "LIVELINESS_PROBE=${params.livelinessProbe}"))
+  						      openshift.create(templateSelector.process("stevetemplate", "-p", "APP_NAME=${params.projectName}", "-p", "APP_NAMESPACE=${params.ocpnamespace}", "-p", "CONFIG_MAP_REF=${params.configMapRef}", "-p", "SECRET_KEY_REF=${params.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}"))
   	          }
           }
   			}
