@@ -19,6 +19,11 @@ def runPipeline() {
     def currentBuild = "\${currentBuild.number}"
 */
 
+    mvnHome = tool 'M3'
+    ocHome  = tool 'oc311'
+    ocHome  = "$ocHome/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit"
+    oc      = "$ocHome/oc"
+
     stage('Build') {
       // Run the maven test
       if (isUnix()) {
