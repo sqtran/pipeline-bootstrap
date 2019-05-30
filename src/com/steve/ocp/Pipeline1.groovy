@@ -1,28 +1,16 @@
 @Grab('org.yaml:snakeyaml:1.17')
 import org.yaml.snakeyaml.Yaml
 
-def runPipeline() {
-
-/*
-    def mvnHome
-    def artifactName
-    def artifactVersion
-    def projectName = "$PROJECT_NAME"
-    def gitProject = "$GIT_URL"
-    def gitBranch = "$GIT_BRANCH"
-    def gitDigest
-    def ocpnamespace = "$OCP_NAMESPACE"
-    def configMapRef = "${ CONFIG_MAP_REF ?: "$PROJECT_NAME-cm" }"
-    def secretKeyRef = "${ SECRET_KEY_REF ?: "$PROJECT_NAME-sk" }"
-    def readinessProbe = "$READINESS_PROBE"
-    def livelinessProbe = "$LIVELINESS_PROBE"
-    def currentBuild = "\${currentBuild.number}"
-*/
+def runPipeline(def params) {
 
     mvnHome = tool 'M3'
     ocHome  = tool 'oc311'
     ocHome  = "$ocHome/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit"
     oc      = "$ocHome/oc"
+
+    pom = readMavenPom file: 'pom.xml'
+    artifactName = "${pom.name}"
+    artifactVersion = "${pom.version}"
 
     stage('Build') {
       // Run the maven test
@@ -58,10 +46,10 @@ def runPipeline() {
     }
 
     openshift.withCluster() {
-      withEnv(["PATH+OC=\$ocHome"]) {
+      withEnv(["PATH+OC=$ocHome"]) {
   		  def objectsExist
-  			openshift.withProject(ocpnamespace) {
-          objectsExist = openshift.selector("all", [ application : projectName ]).exists()
+  			openshift.withProject("${params.ocpnamespace}") {
+          objectsExist = openshift.selector("all", [ application : "${params.projectName}" ]).exists()
 
   				//stage("Check SA Permissions") {
           //    openshift.raw('adm', "policy", "add-role-to-user", "edit", "system:serviceaccount:project-steve-dev:jenkins")
@@ -73,7 +61,7 @@ def runPipeline() {
             def fileName
             Object data
 
-  					fileName = "$WORKSPACE/ocp/dev/${configMapRef}.yml"
+  					fileName = "$WORKSPACE/ocp/dev/${params.configMapRef}.yml"
             data = new Yaml().load(new FileInputStream(new File(fileName)))
 
   				  if(new File(fileName).exists()) {
@@ -82,20 +70,20 @@ def runPipeline() {
   						if(data.metadata.labels == null) {
                 data.metadata.labels = [:]
               }
-  						data.metadata.labels['application'] = projectName
-  	    			data.metadata.name = configMapRef
-              prereqs = openshift.selector( "configmap", configMapRef )
+  						data.metadata.labels['application'] = "${params.projectName}"
+  	    			data.metadata.name = "${params.configMapRef}"
+              prereqs = openshift.selector( "configmap", "${params.configMapRef}" )
               if(!prereqs.exists()) {
-                println "ConfigMap \$configMapRef doesn't exist, creating now"
+                println "ConfigMap ${params.configMapRef} doesn't exist, creating now"
                 openshift.create(data)
               }
               else {
-                println "ConfigMap $configMapRef exists, updating now"
+                println "ConfigMap ${params.configMapRef} exists, updating now"
                 openshift.apply(data)
               }
   					}
 
-            fileName = "$WORKSPACE/ocp/dev/${secretKeyRef}.yml"
+            fileName = "$WORKSPACE/ocp/dev/${params.secretKeyRef}.yml"
   					if(new File(fileName).exists()) {
               data = new Yaml().load(new FileInputStream(new File(fileName)))
               // Sanitize config map by removing namespace
@@ -103,15 +91,15 @@ def runPipeline() {
   						if(data.metadata.labels == null) {
                 data.metadata.labels = [:]
               }
-      				data.metadata.labels['application'] = projectName
-  						data.metadata.name = secretKeyRef
-              prereqs = openshift.selector( "secret", secretKeyRef )
+      				data.metadata.labels['application'] = "${params.projectName}"
+  						data.metadata.name = "${params.secretKeyRef}"
+              prereqs = openshift.selector( "secret", "${params.secretKeyRef}" )
               if(!prereqs.exists()) {
-                println "Secret $secretKeyRef doesn't exist, creating now"
+                println "Secret ${params.secretKeyRef} doesn't exist, creating now"
                 openshift.create(data)
               }
               else {
-                println "Secret $secretKeyRef exists, updating now"
+                println "Secret ${params.secretKeyRef} exists, updating now"
                 openshift.apply(data)
               }
   					}
@@ -123,15 +111,15 @@ def runPipeline() {
           stage('Process Template') {
   				    if(!objectsExist) {
   						      // TODO loop through this to process each parameter
-  						      openshift.create(templateSelector.process("stevetemplate", "-p", "APP_NAME=$projectName", "-p", "APP_NAMESPACE=$ocpnamespace", "-p", "CONFIG_MAP_REF=$configMapRef", "-p", "SECRET_KEY_REF=$secretKeyRef", "-p", "READINESS_PROBE=$readinessProbe", "-p", "LIVELINESS_PROBE=$livelinessProbe"))
+  						      openshift.create(templateSelector.process("stevetemplate", "-p", "APP_NAME=${params.projectName}", "-p", "APP_NAMESPACE=${params.ocpnamespace}", "-p", "CONFIG_MAP_REF=${params.configMapRef}", "-p", "SECRET_KEY_REF=${params.secretKeyRef}", "-p", "READINESS_PROBE=${params.readinessProbe}", "-p", "LIVELINESS_PROBE=${params.livelinessProbe}"))
   	          }
           }
   			}
 
-  			openshift.withProject(ocpnamespace) {
-          def bc = openshift.selector("buildconfig", projectName)
+  			openshift.withProject("${params.ocpnamespace}") {
+          def bc = openshift.selector("buildconfig", "${params.projectName}")
           stage('OCP Upload Binary') {
-  				    sh "mkdir -p target/ocptarget/.s2i && mv target/\${artifactName}.jar target/ocptarget && echo \"GIT_REF=$gitDigest\" > target/ocptarget/.s2i/environment"
+  				    sh "mkdir -p target/ocptarget/.s2i && mv target/${artifactName}.jar target/ocptarget && echo \"GIT_REF=${params.gitDigest}\" > target/ocptarget/.s2i/environment"
               bc.startBuild("--from-dir=target/ocptarget")
               bc.logs("-f")
           }
@@ -152,13 +140,12 @@ def runPipeline() {
                   return allDone;
               }
 
-              openshift.tag("\${projectName}:latest", "\${projectName}:\${artifactVersion}-b\${currentBuild}")
-
+              openshift.tag("${params.projectName}:latest", "${params.projectName}:${params.artifactVersion}-b${currentBuild.number}")
           }
 
           stage ('Verify Deploy') {
-            def latestDeploymentVersion = openshift.selector('dc',"\${projectName}").object().status.latestVersion
-            def rc = openshift.selector('rc', "\${projectName}-\${latestDeploymentVersion}")
+            def latestDeploymentVersion = openshift.selector('dc',"${params.projectName}").object().status.latestVersion
+            def rc = openshift.selector('rc', "${params.projectName}-${latestDeploymentVersion}")
      				timeout(time: 2, unit: 'MINUTES') {
               rc.untilEach(1){
                 def rcMap = it.object()
@@ -169,4 +156,5 @@ def runPipeline() {
         }
    		}
     }
+
 } //end Pipeline1
