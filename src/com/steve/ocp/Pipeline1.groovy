@@ -141,7 +141,6 @@ def runPipeline(def params) {
                   }
                   return allDone;
               }
-
               openshift.tag("${params.projectName}:latest", "${params.projectName}:${params.artifactVersion}-b${currentBuild.number}")
           }
 
@@ -155,8 +154,8 @@ def runPipeline(def params) {
               }
             }
           }
-        }
-   		}
-    }
+        } //end withProject
+   		} // end withEnv
+    } // end withCluster
 
 } //end Pipeline1
