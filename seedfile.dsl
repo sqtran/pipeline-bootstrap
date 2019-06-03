@@ -12,9 +12,7 @@ node {
   def gitBranch = "$GIT_BRANCH"
   def ocpnamespace = "$OCP_NAMESPACE"
 
-  def params = new HashMap()
-  params['projectName'] = projectName
-  params['ocpnamespace'] = ocpnamespace
+  def params = ['projectName' : projectName, 'ocpnamespace' : ocpnamespace]
 
   stage('Checkout') {
     // not good, but necessary until we fix our self-signed certificate issue
