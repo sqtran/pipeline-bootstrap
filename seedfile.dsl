@@ -19,7 +19,7 @@ node {
 
   stage('Checkout') {
     // not good, but necessary until we fix our self-signed certificate issue
-    sh "git config http.sslVerify false"
+    //sh "git config http.sslVerify false"
     git branch: gitBranch, credentialsId: '6d8ed739-d67d-47f3-8194-c5f3f665da7d', url: gitProject
 
     params['gitDigest'] = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
