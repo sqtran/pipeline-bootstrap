@@ -1,5 +1,6 @@
 def pipelineId = "${ PIPELINE_NAME ?: PROJECT_NAME }"
 
+/*
 properties([
   parameters([
   string(name: 'PIPELINE_NAME', description: 'The name of the Jenkins Pipeline.  If this is blank, it will be set to whatever the Project Name is.'),
@@ -7,6 +8,15 @@ properties([
   string(name: 'PROJECT_NAME', defaultValue: 'shiplify-mock-service', description: 'The name of this project in Openshift, within the namespace.'),
   string(name: 'GIT_URL', defaultValue: 'https://git.corp.odfl.com/od-dev/billing/location-type-update-service/shiplify-mock-service.git', description: 'Should be the URL of the project, not in git clone format.  Copy and paste the URL from the browser.'),
   string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'The branch to build.  Defaults to master branch.')
+  ])
+])
+*/
+
+properties([
+  parameters([
+    string(name: 'submodule', defaultValue: ''),
+    string(name: 'submodule_branch', defaultValue: ''),
+    string(name: 'commit_sha', defaultValue: ''),
   ])
 ])
 
