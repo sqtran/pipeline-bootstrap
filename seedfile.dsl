@@ -4,8 +4,7 @@ pipelineJob(pipelineId) {
   definition {
     cps {
       script(
-"""
-@Library('PipelineBootstrap@master') _
+"""@Library('PipelineBootstrap@master') _
 
 node {
   def projectName = "$PROJECT_NAME"
@@ -26,9 +25,7 @@ node {
   }
 
   new com.steve.ocp.Pipeline1().runPipeline(params)
-}
-
-"""
+}"""
       )
       sandbox()
     }
