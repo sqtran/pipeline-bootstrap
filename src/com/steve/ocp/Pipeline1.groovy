@@ -17,7 +17,7 @@ def runPipeline(def params) {
     stage('Build') {
       // Run the maven test
       if (isUnix()) {
-        configFileProvider([configFile(fileId: 'odlf-settings.xml', variable: 'MAVEN_SETTINGS')]) {
+        configFileProvider([configFile(fileId: 'custom-settings.xml', variable: 'MAVEN_SETTINGS')]) {
           sh "'${mvnHome}/bin/mvn' -s $MAVEN_SETTINGS clean compile -DskipTests"
         }
       } else {
@@ -28,7 +28,7 @@ def runPipeline(def params) {
     stage('Test') {
       // Run the maven test
       if (isUnix()) {
-        configFileProvider([configFile(fileId: 'odlf-settings.xml', variable: 'MAVEN_SETTINGS')]) {
+        configFileProvider([configFile(fileId: 'custom-settings.xml', variable: 'MAVEN_SETTINGS')]) {
           sh "'${mvnHome}/bin/mvn' -s $MAVEN_SETTINGS test"
         }
       } else {
@@ -39,7 +39,7 @@ def runPipeline(def params) {
     stage('Package') {
       // Run the maven build
       if (isUnix()) {
-        configFileProvider([configFile(fileId: 'odlf-settings.xml', variable: 'MAVEN_SETTINGS')]) {
+        configFileProvider([configFile(fileId: 'custom-settings.xml', variable: 'MAVEN_SETTINGS')]) {
           sh "'${mvnHome}/bin/mvn' -s $MAVEN_SETTINGS -Dmaven.test.failure.ignore package -DskipTests"
         }
       } else {
