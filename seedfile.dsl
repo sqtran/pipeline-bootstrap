@@ -45,7 +45,7 @@ node {
     params['gitDigest'] = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
   }
 
-  new com.steve.ocp.Pipeline1().runPipeline(params)
+  new com.steve.ocp.PipelineLoader().runPipeline(params)
 }"""
       )
       sandbox()
