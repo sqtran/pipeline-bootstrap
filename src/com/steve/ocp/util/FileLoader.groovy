@@ -20,25 +20,57 @@ static def readConfig(def filePath = "$WORKSPACE/ocp/config.yml") {
 }
 
 static def readConfigMap(def filePath) {
-	return readFile(filePath, "A ConfigMap file is required")
+	def data
+	try {
+		data = new Yaml().load(new FileInputStream(new File(filePath)))
+	} catch(FileNotFoundException fnfe) {
+		data = [
+			"apiVersion": "v1",
+			"kind": "ConfigMap",
+			"metadata": [
+				"creationTimestamp": null,
+			]
+		]
+	}
+	
+	return sanitize(data)
 }
 
 static def readSecret(def filePath) {
-	return readFile(filePath, "A Secret file is required")
+	def data
+	try {
+		data = new Yaml().load(new FileInputStream(new File(filePath)))
+	} catch(FileNotFoundException fnfe) {
+		data = [
+			"apiVersion": "v1",
+			"kind": "Secret",
+			"data": [
+				"default": ""
+			],
+			"metadata": [
+				"creationTimestamp": null,
+			],
+			"type": "Opaque"
+		]
+	}
+
+	return sanitize(data)
+}
+
+static def sanitize(def data) {
+	// Sanitize by removing the name and namespace
+	data?.metadata?.remove('namespace')
+	if(data?.metadata?.labels == null && data?.metadata != null) {
+		// only set metadata on objects that have it
+		data?.metadata?.labels = [:]
+	}
+	return data
 }
 
 static def readFile(def filePath, String errMessage) {
 	try {
 		def data = new Yaml().load(new FileInputStream(new File(filePath)))
-		
-		// Sanitize by removing the name and namespace
-		data?.metadata?.remove('namespace')
-		if(data?.metadata?.labels == null && data?.metadata != null) {
-			// only set metadata on objects that have it
-			data?.metadata?.labels = [:]
-		}
-
-		return data
+		return sanitize(data)
 	} catch(FileNotFoundException fnfe) {
 		throw new RuntimeException(errMessage)
 	}
