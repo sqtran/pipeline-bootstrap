@@ -2,13 +2,13 @@ package com.steve.ocp.util
 
 @Grab('org.yaml:snakeyaml:1.17')
 import org.yaml.snakeyaml.Yaml
-	
-static def readConfig(def filePath = "$WORKSPACE/ocp/config.yml") {
+
+def readConfig(def filePath = "$WORKSPACE/ocp/config.yml") {
 	String[] fields = ["readinessProbe", "livelinessProbe", "secretKeyRef", "configMapRef"]
-	def config = readFile(filePath, "A config.yml file is required")
+	def config = readYamlFile(filePath, "A config.yml file is required")
 
 	StringBuilder err = new StringBuilder("")
-	fields.each {		
+	fields.each {
 		if(config["${it}"] == null || config["${it}"] == "") {
 			err.append("${it} is a required field\n")
 		}
@@ -19,10 +19,11 @@ static def readConfig(def filePath = "$WORKSPACE/ocp/config.yml") {
 	return config
 }
 
-static def readConfigMap(def filePath) {
+def readConfigMap(def filePath) {
 	def data
 	try {
-		data = new Yaml().load(new FileInputStream(new File(filePath)))
+		def f = readFile filePath
+		data = new Yaml().load(f)
 	} catch(FileNotFoundException fnfe) {
 		data = [
 			"apiVersion": "v1",
@@ -32,14 +33,15 @@ static def readConfigMap(def filePath) {
 			]
 		]
 	}
-	
+
 	return sanitize(data)
 }
 
-static def readSecret(def filePath) {
+def readSecret(def filePath) {
 	def data
 	try {
-		data = new Yaml().load(new FileInputStream(new File(filePath)))
+		def f = readFile filePath
+		data = new Yaml().load(f)
 	} catch(FileNotFoundException fnfe) {
 		data = [
 			"apiVersion": "v1",
@@ -57,7 +59,7 @@ static def readSecret(def filePath) {
 	return sanitize(data)
 }
 
-static def sanitize(def data) {
+def sanitize(def data) {
 	// Sanitize by removing the name and namespace
 	data?.metadata?.remove('namespace')
 	if(data?.metadata?.labels == null && data?.metadata != null) {
@@ -67,9 +69,10 @@ static def sanitize(def data) {
 	return data
 }
 
-static def readFile(def filePath, String errMessage) {
+def readYamlFile(def filePath, String errMessage) {
 	try {
-		def data = new Yaml().load(new FileInputStream(new File(filePath)))
+		def f = readFile filePath
+		def data = new Yaml().load(f)
 		return sanitize(data)
 	} catch(FileNotFoundException fnfe) {
 		throw new RuntimeException(errMessage)

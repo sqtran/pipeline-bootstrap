@@ -15,8 +15,11 @@ def runPipeline(def params) {
 	artifactName = "${pom.name}"
 	artifactVersion = "${pom.version}"
 
-	ocpConfig = com.steve.ocp.util.FileLoader.readConfig("$WORKSPACE/ocp/config.yml")
-	
+  def fileLoader = new com.steve.ocp.util.FileLoader()
+
+
+	ocpConfig = fileLoader.readConfig("$WORKSPACE/ocp/config.yml")
+
 	stage('Build') {
 		// Run the maven test
 		if (isUnix()) {
@@ -57,12 +60,12 @@ def runPipeline(def params) {
 				objectsExist = openshift.selector("all", [ application : "${params.projectName}" ]).exists()
 
 				stage("Process CM/SK") {
-					
+
 					// Process Config Map
-					Object data = com.steve.ocp.util.FileLoader.readConfigMap("$WORKSPACE/ocp/dev/${ocpConfig.configMapRef}.yml")
+					Object data = fileLoader.readConfigMap("$WORKSPACE/ocp/dev/${ocpConfig.configMapRef}.yml")
 					data.metadata.labels['app'] = "${params.projectName}"
 					data.metadata.name = "${ocpConfig.configMapRef}"
-					
+
 					def prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
 					if(!prereqs.exists()) {
 						println "ConfigMap ${ocpConfig.configMapRef} doesn't exist, creating now"
@@ -72,12 +75,12 @@ def runPipeline(def params) {
 						println "ConfigMap ${ocpConfig.configMapRef} exists, updating now"
 						openshift.apply(data)
 					}
-					
+
 					// Process Secret
-					data = com.steve.ocp.util.FileLoader.readSecret("$WORKSPACE/ocp/dev/${ocpConfig.secretKeyRef}.yml")
+					data = fileLoader.readSecret("$WORKSPACE/ocp/dev/${ocpConfig.secretKeyRef}.yml")
 					data.metadata.labels['app'] = "${params.projectName}"
 					data.metadata.name = "${ocpConfig.secretKeyRef}"
-					
+
 					prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
 					if(!prereqs.exists()) {
 						println "Secret ${ocpConfig.secretKeyRef} doesn't exist, creating now"
@@ -87,7 +90,7 @@ def runPipeline(def params) {
 						println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
 						openshift.apply(data)
 					}
-					
+
 				} // end stage
 			} // end withProject
 
@@ -142,4 +145,3 @@ def runPipeline(def params) {
 		} // end withEnv
 	} // end withCluster
 } //end runPipeline
-
