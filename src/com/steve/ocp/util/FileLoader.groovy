@@ -3,7 +3,7 @@ package com.steve.ocp.util
 @Grab('org.yaml:snakeyaml:1.17')
 import org.yaml.snakeyaml.Yaml
 
-def readConfig(def filePath = "$WORKSPACE/ocp/config.yml") {
+def readConfig(def filePath = "./ocp/config.yml") {
 	String[] fields = ["readinessProbe", "livelinessProbe", "secretKeyRef", "configMapRef"]
 	def config = readYamlFile(filePath, "A config.yml file is required")
 

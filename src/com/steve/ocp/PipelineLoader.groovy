@@ -17,8 +17,10 @@ def runPipeline(def params) {
 
   def fileLoader = new com.steve.ocp.util.FileLoader()
 
-
 	ocpConfig = fileLoader.readConfig("$WORKSPACE/ocp/config.yml")
+
+	// load in the Jenkins parameters into the configuration object so we have everything in one place
+	ocpConfig << params
 
 	stage('Build') {
 		// Run the maven test
@@ -56,14 +58,14 @@ def runPipeline(def params) {
 	openshift.withCluster() {
 		withEnv(["PATH+OC=$ocHome"]) {
 			def objectsExist
-			openshift.withProject("${params.ocpnamespace}") {
-				objectsExist = openshift.selector("all", [ application : "${params.projectName}" ]).exists()
+			openshift.withProject("${ocpConfig.ocpnamespace}") {
+				objectsExist = openshift.selector("all", [ application : "${ocpConfig.projectName}" ]).exists()
 
 				stage("Process CM/SK") {
 
 					// Process Config Map
 					Object data = fileLoader.readConfigMap("$WORKSPACE/ocp/dev/${ocpConfig.configMapRef}.yml")
-					data.metadata.labels['app'] = "${params.projectName}"
+					data.metadata.labels['app'] = "${ocpConfig.projectName}"
 					data.metadata.name = "${ocpConfig.configMapRef}"
 
 					def prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
@@ -78,7 +80,7 @@ def runPipeline(def params) {
 
 					// Process Secret
 					data = fileLoader.readSecret("$WORKSPACE/ocp/dev/${ocpConfig.secretKeyRef}.yml")
-					data.metadata.labels['app'] = "${params.projectName}"
+					data.metadata.labels['app'] = "${ocpConfig.projectName}"
 					data.metadata.name = "${ocpConfig.secretKeyRef}"
 
 					prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
@@ -99,16 +101,16 @@ def runPipeline(def params) {
 				stage('Process Template') {
 					if(!objectsExist) {
 						// TODO loop through this to process each parameter
-						openshift.create(templateSelector.process("stevetemplate", "-p", "APP_NAME=${params.projectName}", "-p", "APP_NAMESPACE=${params.ocpnamespace}", "-p", "CONFIG_MAP_REF=${params.configMapRef}", "-p", "SECRET_KEY_REF=${params.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}"))
+						openshift.create(templateSelector.process("stevetemplate", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}"))
 					}
 				}
 			}
 
-			openshift.withProject("${params.ocpnamespace}") {
-				def bc = openshift.selector("buildconfig", "${params.projectName}")
+			openshift.withProject("${ocpConfig.ocpnamespace}") {
+				def bc = openshift.selector("buildconfig", "${ocpConfig.projectName}")
 
 				stage('OCP Upload Binary') {
-					sh "mkdir -p target/ocptarget/.s2i && mv target/${artifactName}.jar target/ocptarget && echo \"GIT_REF=${params.gitDigest}\" > target/ocptarget/.s2i/environment"
+					sh "mkdir -p target/ocptarget/.s2i && mv target/${artifactName}.jar target/ocptarget && echo \"GIT_REF=${ocpConfig.gitDigest}\" > target/ocptarget/.s2i/environment"
 					bc.startBuild("--from-dir=target/ocptarget")
 					bc.logs("-f")
 				}
@@ -128,12 +130,12 @@ def runPipeline(def params) {
 						}
 						return allDone;
 					}
-					openshift.tag("${params.projectName}:latest", "${params.projectName}:${params.artifactVersion}-b${currentBuild.number}")
+					openshift.tag("${ocpConfig.projectName}:latest", "${ocpConfig.projectName}:${artifactVersion}-b${currentBuild.number}")
 				}
 
 				stage ('Verify Deploy') {
-					def latestDeploymentVersion = openshift.selector('dc',"${params.projectName}").object().status.latestVersion
-					def rc = openshift.selector('rc', "${params.projectName}-${latestDeploymentVersion}")
+					def latestDeploymentVersion = openshift.selector('dc',"${ocpConfig.projectName}").object().status.latestVersion
+					def rc = openshift.selector('rc', "${ocpConfig.projectName}-${latestDeploymentVersion}")
 					timeout(time: 2, unit: 'MINUTES') {
 						rc.untilEach(1) {
 							def rcMap = it.object()
