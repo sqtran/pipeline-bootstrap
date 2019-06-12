@@ -1,5 +1,14 @@
 package com.steve.ocp
 
+import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
+
+def stage(name, execute, block) {
+    return stage(name, execute ? block : {
+        echo "skipped stage $name"
+        Utils.markStageSkippedForConditional(STAGE_NAME)
+    })
+}
+
 def runPipeline(def params) {
 
 	mvnHome = tool 'M3'
@@ -152,11 +161,10 @@ def runPipeline(def params) {
 					}
 				} // end stage
 
+				def userInput = true
+				def didTimeout = false
+
 				stage ('Promote to QA?') {
-
-					def userInput = true
-					def didTimeout = false
-
 					try {
 					    timeout(time: 120, unit: 'SECONDS') {
 					        userInput = input(
@@ -186,21 +194,19 @@ def runPipeline(def params) {
 			        echo "this was not successful"
 			        currentBuild.result = 'FAILURE'
 			    }
-
-
 				}
 
-				stage ('Promote to PROD?') {
-
+				stage ('Promote to PROD?', userInput) {
+					echo "Promote to PROD? stage"
 				}
-				stage ('Tag') {
-
+				stage ('Tag', userInput) {
+					echo "Tag stage"
 				}
-				stage ('Push to Artifactory') {
-
+				stage ('Push to Artifactory', userInput) {
+					echo "Push to Artifactory stage"
 				}
-				stage ('Verify PROD Deploy') {
-							echo "Pipeline Done!"
+				stage ('Verify PROD Deploy', userInput) {
+					echo "Verify PROD Deploy stage"
 				}
 
 			} // end withProject
