@@ -10,12 +10,24 @@ def runPipeline(def params) {
 	ocHome  = tool 'oc311'
 	ocHome  = "$ocHome/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit"
 	oc      = "$ocHome/oc"
+	def fileLoader = new com.steve.ocp.util.FileLoader()
+
+	stage('Checkout') {
+    // not good, but necessary until we fix our self-signed certificate issue
+    //sh "git config http.sslVerify false"
+    try {
+      git branch: "${params.gitBranch}", credentialsId: '6d8ed739-d67d-47f3-8194-c5f3f665da7d', url: "${params.gitUrl}"
+    } catch (Exception e) {
+      sh "git config http.sslVerify false"
+      git branch: "${params.gitBranch}", credentialsId: '6d8ed739-d67d-47f3-8194-c5f3f665da7d', url: "${params.gitUrl}"
+    }
+
+    params['gitDigest'] = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+  }
 
 	pom = readMavenPom file: 'pom.xml'
 	artifactName = "${pom.name}"
 	artifactVersion = "${pom.version}"
-
-  def fileLoader = new com.steve.ocp.util.FileLoader()
 
 	ocpConfig = fileLoader.readConfig("$WORKSPACE/ocp/config.yml")
 
