@@ -15,6 +15,6 @@ node {
       concurrentBuild(false)
     }
 
-    description("This is an auto-generated pipeline")
+    description("This is an auto-generated pipeline\nBuilt from $GIT_BRANCH on $GIT_URL")
   }
 }

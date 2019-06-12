@@ -1,9 +1,5 @@
 package com.steve.ocp
 
-@Grab('org.yaml:snakeyaml:1.17')
-import org.yaml.snakeyaml.Yaml
-
-
 def runPipeline(def params) {
 
 	mvnHome = tool 'M3'
@@ -71,7 +67,7 @@ def runPipeline(def params) {
 		withEnv(["PATH+OC=$ocHome"]) {
 			def objectsExist
 			openshift.withProject("${ocpConfig.ocpnamespace}") {
-				objectsExist = openshift.selector("all", [ application : "${ocpConfig.projectName}" ]).exists()
+				objectsExist = openshift.selector("all", [ "app" : "${ocpConfig.projectName}" ]).exists()
 
 				stage("Process CM/SK") {
 
