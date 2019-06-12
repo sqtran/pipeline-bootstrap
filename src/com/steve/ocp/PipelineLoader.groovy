@@ -141,7 +141,7 @@ def runPipeline(def params) {
 					openshift.tag("${ocpConfig.projectName}:latest", "${ocpConfig.projectName}:${artifactVersion}-b${currentBuild.number}")
 				}
 
-				stage ('Verify Deploy') {
+				stage ('Verify DEV Deploy') {
 					def latestDeploymentVersion = openshift.selector('dc',"${ocpConfig.projectName}").object().status.latestVersion
 					def rc = openshift.selector('rc', "${ocpConfig.projectName}-${latestDeploymentVersion}")
 					timeout(time: 2, unit: 'MINUTES') {
@@ -151,6 +151,58 @@ def runPipeline(def params) {
 						}
 					}
 				} // end stage
+
+				stage ('Promote to QA?') {
+
+					def userInput = true
+					def didTimeout = false
+
+					try {
+					    timeout(time: 120, unit: 'SECONDS') {
+					        userInput = input(
+					        	id: 'PromoteToQA', message: 'Promote to QA?', parameters: [
+					        		[$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Check box to promote this to QA', name: 'Please confirm you agree with this']
+					        	]
+									)
+					    }
+					} catch(err) { // timeout reached or input false
+					    def user = err.getCauses()[0].getUser()
+					    if('SYSTEM' == user.toString()) { // SYSTEM means timeout.
+					        didTimeout = true
+					    } else {
+					        userInput = false
+					        echo "Aborted by: [${user}]"
+					    }
+					}
+
+			    if (didTimeout) {
+			        // do something on timeout
+			        echo "no input was received before timeout"
+			    } else if (userInput == true) {
+			        // do something
+			        echo "this was successful"
+			    } else {
+			        // do something else
+			        echo "this was not successful"
+			        currentBuild.result = 'FAILURE'
+			    }
+
+
+				}
+
+				stage ('Promote to PROD?') {
+
+				}
+				stage ('Tag') {
+
+				}
+				stage ('Push to Artifactory') {
+
+				}
+				stage ('Verify PROD Deploy') {
+							echo "Pipeline Done!"
+				}
+
 			} // end withProject
 		} // end withEnv
 	} // end withCluster
