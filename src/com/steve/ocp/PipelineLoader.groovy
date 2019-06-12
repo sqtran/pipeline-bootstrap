@@ -159,7 +159,7 @@ def runPipeline(def params) {
 					}
 				} // end stage
 
-				def userInput = true
+				def userInput = false
 				def didTimeout = false
 
 				stage ('Promote to QA?') {
@@ -184,7 +184,7 @@ def runPipeline(def params) {
 			    if (didTimeout) {
 			        // do something on timeout
 			        echo "no input was received before timeout"
-			    } else if (userInput == true) {
+			    } else if (userInput) {
 			        // do something
 			        echo "this was successful"
 			    } else {
