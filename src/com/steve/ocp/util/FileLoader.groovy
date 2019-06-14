@@ -24,7 +24,7 @@ def readConfigMap(def filePath) {
 	try {
 		def f = readFile filePath
 		data = new Yaml().load(f)
-	} catch(FileNotFoundException fnfe) {
+	} catch(Exception e) {
 		data = [
 			"apiVersion": "v1",
 			"kind": "ConfigMap",
@@ -42,7 +42,7 @@ def readSecret(def filePath) {
 	try {
 		def f = readFile filePath
 		data = new Yaml().load(f)
-	} catch(FileNotFoundException fnfe) {
+	} catch(Exception e) {
 		data = [
 			"apiVersion": "v1",
 			"kind": "Secret",
