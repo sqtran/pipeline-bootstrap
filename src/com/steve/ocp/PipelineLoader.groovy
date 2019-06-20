@@ -12,10 +12,10 @@ def runPipeline(def params) {
     // not good, but necessary until we fix our self-signed certificate issue
     //sh "git config http.sslVerify false"
     try {
-      git branch: "${params.gitBranch}", credentialsId: '6d8ed739-d67d-47f3-8194-c5f3f665da7d', url: "${params.gitUrl}"
+      git branch: "${params.gitBranch}", credentialsId: 'git-sa', url: "${params.gitUrl}"
     } catch (Exception e) {
       sh "git config http.sslVerify false"
-      git branch: "${params.gitBranch}", credentialsId: '6d8ed739-d67d-47f3-8194-c5f3f665da7d', url: "${params.gitUrl}"
+      git branch: "${params.gitBranch}", credentialsId: 'git-sa', url: "${params.gitUrl}"
     }
 
     params['gitDigest'] = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
