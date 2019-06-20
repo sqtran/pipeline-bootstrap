@@ -130,6 +130,7 @@ def runPipeline(def params) {
 					bc.logs("-f")
 				}
 
+        def current_image_tag = "${ocpConfig.projectName}:${artifactVersion}-b${currentBuild.number}"
 				stage ('Verify Build') {
 					def builds = bc.related('builds')
 					builds.watch {
@@ -145,7 +146,7 @@ def runPipeline(def params) {
 						}
 						return allDone;
 					}
-					openshift.tag("${ocpConfig.projectName}:latest", "${ocpConfig.projectName}:${artifactVersion}-b${currentBuild.number}")
+					openshift.tag("${ocpConfig.projectName}:latest", current_image_tag)
 				}
 
 				stage ('Verify DEV Deploy') {
@@ -186,22 +187,27 @@ def runPipeline(def params) {
 			        echo "no input was received before timeout"
 			    } else if (userInput) {
 			        // do something
-			        echo "this was successful"
+			        echo "User selected to promote"
 			    } else {
 			        // do something else
-			        echo "this was not successful"
-			        currentBuild.result = 'FAILURE'
+			        echo "User selected not to promote"
+			        //currentBuild.result = 'FAILURE'
 			    }
 				}
 
+				stage('Push into Artifactory', userInput) {
+				  configFileProvider([configFile(fileId: 'docker_config.json', targetLocation: "/home/jenkins/.docker/config.json")]) {
+							// the ARTIFACTORY_URL also includes the path to store the image in Artifactory
+							def results = openshift.raw("image mirror $OCPDEV_REGISTRY_URL/${ocpConfig.ocpnamespace}/$current_image_tag $ARTIFACTORY_URL/$current_image_tag --insecure ")
+							echo "image mirror results = $results"
+				  }
+				}
+
+				stage ('Verify QA Deploy', userInput) {
+          echo "Verify QA Deploy stage"
+				}
 				stage ('Promote to PROD?', userInput) {
 					echo "Promote to PROD? stage"
-				}
-				stage ('Tag', userInput) {
-					echo "Tag stage"
-				}
-				stage ('Push to Artifactory', userInput) {
-					echo "Push to Artifactory stage"
 				}
 				stage ('Verify PROD Deploy', userInput) {
 					echo "Verify PROD Deploy stage"
