@@ -1,6 +1,8 @@
 package com.steve.ocp
 
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
+import com.steve.ocp.util.FileLoader
+import com.steve.ocp.util.Sanitizer
 
 def stage(name, execute, block) {
     return stage(name, execute ? block : {
@@ -15,7 +17,10 @@ def runPipeline(def params) {
 	ocHome  = tool 'oc311'
 	ocHome  = "$ocHome/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit"
 	oc      = "$ocHome/oc"
-	def fileLoader = new com.steve.ocp.util.FileLoader()
+	def fileLoader = new FileLoader()
+
+  // we sanitize because we assume all input is valid from here on out
+  params = new Sanitizer().sanitizePipelineInput(params)
 
 	stage('Checkout') {
     // not good, but necessary until we fix our self-signed certificate issue
