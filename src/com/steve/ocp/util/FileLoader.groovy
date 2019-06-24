@@ -4,15 +4,23 @@ package com.steve.ocp.util
 import org.yaml.snakeyaml.Yaml
 
 def readConfig(def filePath = "./ocp/config.yml") {
-	String[] fields = ["readinessProbe", "livelinessProbe", "secretKeyRef", "configMapRef"]
+	String[] requiredFields = ["readinessProbe", "livelinessProbe", "secretKeyRef", "configMapRef"]
+	String[] positiveIntFields = ["replicas"]
 	def config = readYamlFile(filePath, "A config.yml file is required")
 
 	StringBuilder err = new StringBuilder("")
-	fields.each {
+	requiredFields.each {
 		if(config["${it}"] == null || config["${it}"] == "") {
 			err.append("${it} is a required field\n")
 		}
 	}
+
+	positiveIntFields.each {
+		if(config["${it}"] != null && config["${it}"] < 0) {
+			err.append("${it} must be a positive integer\n")
+		}
+	}
+
 	if(err.toString() != "") {
 		throw new RuntimeException(err.toString())
 	}

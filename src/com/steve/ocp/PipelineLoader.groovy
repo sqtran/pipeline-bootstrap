@@ -159,13 +159,15 @@ def runPipeline(def params) {
 				}
 
 				stage ('Verify DEV Deploy') {
-					def latestDeploymentVersion = openshift.selector('dc',"${ocpConfig.projectName}").object().status.latestVersion
-					def rc = openshift.selector('rc', "${ocpConfig.projectName}-${latestDeploymentVersion}")
+
+          // Scale if user had specified a specific number of replicas, otherwise just do whatever is already configured in OCP
+          def desiredReplicas = ocpConfig.replicas
+          if(desiredReplicas != null) {
+            openshift.raw("scale deploymentconfig ${ocpConfig.projectName} --replicas=$desiredReplicas")
+          }
+
 					timeout(time: 2, unit: 'MINUTES') {
-						rc.untilEach(1) {
-							def rcMap = it.object()
-							return (rcMap.status.replicas.equals(rcMap.status.readyReplicas))
-						}
+            openshift.selector('dc', ocpConfig.projectName).rollout().status()
 					}
 				} // end stage
 
