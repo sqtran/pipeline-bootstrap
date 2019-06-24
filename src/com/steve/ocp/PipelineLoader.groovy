@@ -135,7 +135,11 @@ def runPipeline(def params) {
 					bc.logs("-f")
 				}
 
-        def current_image_tag = "${ocpConfig.projectName}:${artifactVersion}-b${currentBuild.number}"
+        // Job ID is the first 8 characters of the UUID based on the JOB_NAME
+        def jid = UUID.nameUUIDFromBytes("$JOB_NAME".getBytes()).toString().substring(0,8);
+        def current_image_tag = "${ocpConfig.projectName}:${artifactVersion}-${jid}-b${currentBuild.number}"
+        println "This Pipeline has Job ID $jid and will tag the newly created image as $current_image_tag"
+
 				stage ('Verify Build') {
 					def builds = bc.related('builds')
 					builds.watch {
