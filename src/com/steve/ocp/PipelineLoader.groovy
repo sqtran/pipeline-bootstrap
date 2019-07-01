@@ -214,16 +214,6 @@ def runPipeline(def params) {
 				  }
 				}
 
-				stage ('Verify QA Deploy', userInput) {
-          echo "Verify QA Deploy stage"
-				}
-				stage ('Promote to PROD?', userInput) {
-					echo "Promote to PROD? stage"
-				}
-				stage ('Verify PROD Deploy', userInput) {
-					echo "Verify PROD Deploy stage"
-				}
-
 			} // end withProject
 		} // end withEnv
 	} // end withCluster
