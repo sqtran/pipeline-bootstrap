@@ -61,9 +61,10 @@ if (ENVS.equals("QA")) {
   definition {
     cps {
       script(
-"""
+"""@Library('PipelineBootstrap@master') _
 node {
-  sh "echo 'hello world'"
+  def params = ['projectName' : "$PROJECT_NAME", 'ocpnamespace' : "$OCP_NAMESPACE", 'selectedImageTag' : "\$IMAGE_TAG", 'selectedDeploymentEnv' : "\$ENVS"]
+  new com.steve.ocp.ReleasePipeline().process(params)
 }"""
       )
       sandbox()

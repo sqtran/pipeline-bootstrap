@@ -171,6 +171,7 @@ def runPipeline(def params) {
 					}
 				} // end stage
 
+/*
 				def userInput = false
 				def didTimeout = false
 
@@ -213,6 +214,7 @@ def runPipeline(def params) {
 							echo "image mirror results = $results"
 				  }
 				}
+*/
 
 			} // end withProject
 		} // end withEnv
