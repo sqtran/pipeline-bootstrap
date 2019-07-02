@@ -44,7 +44,7 @@ if (ENVS.equals("QA")) {
   try {
     def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(com.cloudbees.plugins.credentials.Credentials.class, Jenkins.instance, null, null);
     def token = creds.find {it.id == 'jenkins-sa-token'}
-    def curl = [ 'bash', '-c', "curl -k https://$OCPDEV_REGISTRY_URL/v2/steve-test3/simple-spring-boot/tags/list -u any:\${token.getSecret().getPlainText()}"]
+    def curl = [ 'bash', '-c', "curl -k https://\$OCPDEV_REGISTRY_URL/v2/$OCP_NAMESPACE/$PROJECT_NAME/tags/list -u any:\${token.getSecret().getPlainText()}"]
     return new JsonSlurper().parseText(curl.execute().text).tags
   } catch (Exception e) {
       println(e)
