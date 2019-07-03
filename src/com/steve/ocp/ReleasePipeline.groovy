@@ -41,16 +41,18 @@ def process(def params) {
 
 
 			stage("Process Templates") {
-				def templateSelector
+
+				def processedTemplate
 				openshift.withProject("project-steve-dev") {
-					 templateSelector = openshift.selector( "template", "stevetemplate")
+					 def templateSelector = openshift.selector( "template", "stevetemplate")
+					 processedTemplate = templateSelector.process("stevetemplate", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}")
 				}
 
 				openshift.withCluster("ocp-qa") {
 					openshift.withProject(params.ocpnamespace) {
 						def objectsExist = openshift.selector("all", [ "app" : "${ocpConfig.projectName}" ]).exists()
 						if(!objectsExist) {
-							openshift.create(templateSelector.process("stevetemplate", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}"))
+							openshift.create(processedTemplate)
 						}
 					}
 				}
