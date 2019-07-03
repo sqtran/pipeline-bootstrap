@@ -100,6 +100,21 @@ def process(def params) {
 
 			stage("Verify Rollout") {
 
+				openshift.withCluster("ocp-qa") {
+					openshift.withProject(params.ocpnamespace) {
+
+						// Scale if user had specified a specific number of replicas, otherwise just do whatever is already configured in OCP
+						def desiredReplicas = ocpConfig.replicas
+						if(desiredReplicas != null) {
+							openshift.raw("scale deploymentconfig ${ocpConfig.projectName} --replicas=$desiredReplicas")
+						}
+
+						timeout(time: 2, unit: 'MINUTES') {
+							openshift.selector('dc', ocpConfig.projectName).rollout().status()
+						}
+					}
+					
+				}
 			}
 
 	} // end withCluster
