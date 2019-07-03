@@ -36,7 +36,8 @@ def process(def params) {
       }
 
 			// TODO clean this up
-			def ocpConfig = new FileLoader().readConfig("$WORKSPACE/ocp/config.yml")
+			def fileLoader = new FileLoader()
+			def ocpConfig = fileLoader.readConfig("$WORKSPACE/ocp/config.yml")
 			ocpConfig << params
 
 
