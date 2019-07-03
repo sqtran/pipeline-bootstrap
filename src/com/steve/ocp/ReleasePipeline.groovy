@@ -8,7 +8,7 @@ def process(def params) {
           // the ARTIFACTORY_URL also includes the path to store the image in Artifactory
 
           def dev_image_tag = "${params.projectName}:${params.selectedImageTag}"
-          def qa_image_tag = "${dev_imag_tag}-rc-b${currentBuild.number}"
+          def qa_image_tag = "${dev_image_tag}-rc-b${currentBuild.number}"
 
           def results = openshift.raw("image mirror $OCPDEV_REGISTRY_URL/${params.ocpnamespace}/$dev_image_tag $ARTIFACTORY_URL/$qa_image_tag --insecure ")
           echo "image mirror results = $results"
