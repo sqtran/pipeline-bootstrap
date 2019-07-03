@@ -1,5 +1,7 @@
 package com.steve.ocp
 
+import com.steve.ocp.util.FileLoader
+
 def process(def params) {
 
 	def dev_image_tag = "${params.projectName}:${params.selectedImageTag}"
@@ -33,7 +35,25 @@ def process(def params) {
 
       }
 
+			// TODO clean this up
+			def ocpConfig = new FileLoader().readConfig("$WORKSPACE/ocp/config.yml")
+			ocpConfig << params
+
+
 			stage("Process Templates") {
+				def templateSelector
+				openshift.withProject("project-steve-dev") {
+					 templateSelector = openshift.selector( "template", "stevetemplate")
+				}
+
+				openshift.withCluster("ocp-qa") {
+					openshift.withProject(params.ocpnamespace) {
+						def objectsExist = openshift.selector("all", [ "app" : "${ocpConfig.projectName}" ]).exists()
+						if(!objectsExist) {
+							openshift.create(templateSelector.process("stevetemplate", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}"))
+						}
+					}
+				}
 
 			}
 
