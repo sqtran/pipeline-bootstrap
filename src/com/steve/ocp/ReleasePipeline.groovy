@@ -46,7 +46,7 @@ def process(def params) {
 				def processedTemplate
 				openshift.withProject("project-steve-dev") {
 					 def templateSelector = openshift.selector( "template", "releasetemplate")
-					 processedTemplate = templateSelector.process("releasetemplate", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}")
+					 processedTemplate = templateSelector.process("releasetemplate", "-p", "DEPLOYMENT_IMAGE=$ARTIFACTORY_URL/$qa_image_tag", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}")
 				}
 
 				openshift.withCluster("ocp-qa") {

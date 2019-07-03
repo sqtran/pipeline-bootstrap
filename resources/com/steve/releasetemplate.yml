@@ -75,7 +75,7 @@ objects:
               name: ${CONFIG_MAP_REF}
           - secretRef:
               name: ${SECRET_KEY_REF}
-          image: ${APP_NAME}
+          image: ${DEPLOYMENT_IMAGE}
           imagePullPolicy: Always
           livenessProbe:
             httpGet:
@@ -112,15 +112,6 @@ objects:
               memory: ${MEMORY_LIMIT}
         terminationGracePeriodSeconds: 75
     triggers:
-    - imageChangeParams:
-        automatic: true
-        containerNames:
-        - ${APP_NAME}
-        from:
-          kind: ImageStreamTag
-          name: ${APP_NAME}:latest
-          namespace: ${APP_NAMESPACE}
-      type: ImageChange
     - type: ConfigChange
 
 
@@ -145,6 +136,10 @@ parameters:
   description: Base image name.
   displayName: Base Image Name
   required: false
+- name: DEPLOYMENT_IMAGE
+  description: "Name of the image to deploy."
+  displayName: "Deployment Image"
+  required: true
 - name: CONFIG_MAP_REF
   description: "Name of the config map reference."
   displayName: "Config Map Reference"
