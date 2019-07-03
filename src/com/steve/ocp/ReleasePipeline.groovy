@@ -42,19 +42,43 @@ def process(def params) {
 
 
 			stage("Process Templates") {
-
-				def processedTemplate
-				openshift.withProject("project-steve-dev") {
-					 def templateSelector = openshift.selector( "template", "releasetemplate")
-					 processedTemplate = templateSelector.process("releasetemplate", "-p", "DEPLOYMENT_IMAGE=$ARTIFACTORY_URL/$qa_image_tag", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}")
-				}
+				def template
 
 				openshift.withCluster("ocp-qa") {
 					openshift.withProject(params.ocpnamespace) {
-						def objectsExist = openshift.selector("all", [ "app" : "${ocpConfig.projectName}" ]).exists()
-						if(!objectsExist) {
-							openshift.create(processedTemplate)
+						if(!openshift.selector("route", [ "app" : "${ocpConfig.projectName}" ]).exists()) {
+							openshift.withCluster("ocp-dev") {
+								template = openshift.withProject("project-steve-dev") {
+									 openshift.selector( "template", "routetemplate").object()
+								}
+							}
+							openshift.create(openshift.process(template, "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}"))
 						}
+
+						if(!openshift.selector("service", [ "app" : "${ocpConfig.projectName}" ]).exists()) {
+							openshift.withCluster("ocp-dev") {
+								template = openshift.withProject("project-steve-dev") {
+									 openshift.selector( "template", "servicetemplate").object()
+								}
+							}
+							openshift.create(openshift.process(template, "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}"))
+						}
+
+
+						openshift.withCluster("ocp-dev") {
+							template = openshift.withProject("project-steve-dev") {
+								 openshift.selector( "template", "deploymentreleasetemplate").object()
+							}
+						}
+						def dc = openshift.process(template, "-p", "DEPLOYMENT_IMAGE=$ARTIFACTORY_URL/$qa_image_tag", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}")
+
+						if(!openshift.selector("deploymentconfig", [ "app" : "${ocpConfig.projectName}" ]).exists()) {
+							openshift.create(dc)
+						}
+						else {
+							openshift.apply(dc)
+						}
+
 					}
 				}
 
@@ -113,7 +137,7 @@ def process(def params) {
 							openshift.selector('dc', ocpConfig.projectName).rollout().status()
 						}
 					}
-					
+
 				}
 			}
 
