@@ -13,8 +13,6 @@ def stage(name, execute, block) {
 
 def runPipeline(def params) {
 
-	mvnHome = tool 'M3'
-
 	def fileLoader = new FileLoader()
 
   // we sanitize because we assume all input is valid from here on out
@@ -42,38 +40,23 @@ def runPipeline(def params) {
 	// load in the Jenkins parameters into the configuration object so we have everything in one place
 	ocpConfig << params
 
-	stage('Build') {
-		// Run the maven test
-		if (isUnix()) {
-			configFileProvider([configFile(fileId: 'custom-settings.xml', variable: 'MAVEN_SETTINGS')]) {
-				sh "'${mvnHome}/bin/mvn' -s $MAVEN_SETTINGS clean compile -DskipTests"
-			}
-		} else {
-			error('Failing build because this is not a slave linux container... who knows what will happen')
-		}
-	}
+  if (!isUnix()) {
+    error('Failing build because this is not a slave linux container... who knows what will happen')
+  }
 
-	stage('Test') {
-		// Run the maven test
-		if (isUnix()) {
-			configFileProvider([configFile(fileId: 'custom-settings.xml', variable: 'MAVEN_SETTINGS')]) {
-				sh "'${mvnHome}/bin/mvn' -s $MAVEN_SETTINGS test"
-			}
-		} else {
-			error('Failing build because this is not a slave linux container... who knows what will happen')
-		}
-	}
+  configFileProvider([configFile(fileId: 'custom-settings.xml', variable: 'MAVEN_SETTINGS')]) {
+    stage('Build') {
+  		sh "mvn -s $MAVEN_SETTINGS clean compile -DskipTests"
+  	}
 
-	stage('Package') {
-		// Run the maven build
-		if (isUnix()) {
-			configFileProvider([configFile(fileId: 'custom-settings.xml', variable: 'MAVEN_SETTINGS')]) {
-				sh "'${mvnHome}/bin/mvn' -s $MAVEN_SETTINGS -Dmaven.test.failure.ignore package -DskipTests"
-			}
-		} else {
-			error('Failing build because this is not a slave linux container... who knows what will happen')
-		}
-	}
+    stage('Test') {
+      sh "mvn -s $MAVEN_SETTINGS test"
+    }
+
+    stage('Package') {
+  		sh "mvn -s $MAVEN_SETTINGS -Dmaven.test.failure.ignore package -DskipTests"
+  	}
+  }
 
 	openshift.withCluster() {
 		def objectsExist

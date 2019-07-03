@@ -2,10 +2,24 @@ package com.steve.ocp
 
 import com.steve.ocp.util.FileLoader
 
+def getLastSuccess() {
+	def lastSuccessfulBuildID = 0
+	def build = currentBuild.previousBuild
+	while (build != null) {
+			if (build.result == "SUCCESS")
+			{
+					lastSuccessfulBuildID = build.id as Integer
+					break
+			}
+			build = build.previousBuild
+	}
+	return lastSuccessfulBuildID
+}
+
 def process(def params) {
 
 	def dev_image_tag = "${params.projectName}:${params.selectedImageTag}"
-	def qa_image_tag = "${dev_image_tag}-rc-b${currentBuild.number}"
+	def qa_image_tag = "${dev_image_tag}-rc-b${getLastSuccess()}"
 
 	openshift.withCluster() {
       stage('Push into Artifactory') {
