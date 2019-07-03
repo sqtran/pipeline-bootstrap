@@ -44,8 +44,8 @@ def process(def params) {
 
 				def processedTemplate
 				openshift.withProject("project-steve-dev") {
-					 def templateSelector = openshift.selector( "template", "stevetemplate")
-					 processedTemplate = templateSelector.process("stevetemplate", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}")
+					 def templateSelector = openshift.selector( "template", "releasetemplate")
+					 processedTemplate = templateSelector.process("releasetemplate", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}")
 				}
 
 				openshift.withCluster("ocp-qa") {
@@ -61,6 +61,40 @@ def process(def params) {
 
 			stage("Process CM/SK") {
 
+				openshift.withCluster("ocp-qa") {
+					openshift.withProject(params.ocpnamespace) {
+						// Process Config Map
+						Object data = fileLoader.readConfigMap("$WORKSPACE/ocp/dev/${ocpConfig.configMapRef}.yml")
+						data.metadata.labels['app'] = "${ocpConfig.projectName}"
+						data.metadata.name = "${ocpConfig.configMapRef}"
+
+						def prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
+						if(!prereqs.exists()) {
+							println "ConfigMap ${ocpConfig.configMapRef} doesn't exist, creating now"
+							openshift.create(data)
+						}
+						else {
+							println "ConfigMap ${ocpConfig.configMapRef} exists, updating now"
+							openshift.apply(data)
+						}
+
+						// Process Secret
+						data = fileLoader.readSecret("$WORKSPACE/ocp/dev/${ocpConfig.secretKeyRef}.yml")
+						data.metadata.labels['app'] = "${ocpConfig.projectName}"
+						data.metadata.name = "${ocpConfig.secretKeyRef}"
+
+						prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
+						if(!prereqs.exists()) {
+							println "Secret ${ocpConfig.secretKeyRef} doesn't exist, creating now"
+							openshift.create(data)
+						}
+						else {
+							println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
+							openshift.apply(data)
+						}
+
+					}
+				}
 			}
 
 			stage("Verify Rollout") {
