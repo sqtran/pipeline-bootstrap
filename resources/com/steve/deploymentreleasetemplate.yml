@@ -1,51 +1,22 @@
 apiVersion: v1
 kind: Template
 labels:
-  template: releasetemplate
+  template: deploymentreleasetemplate
 metadata:
   annotations:
-    description: Generic ODFL Application Template for setting up projects in OCP
-    tags: java,springboot
-    name: releasetemplate
-  namespace: project-steve-dev
-  name: releasetemplate
+    description: Generic Deployment Template for setting up projects in OCP
+    tags: deploymentreleasetemplate
+    name: deploymentreleasetemplate
+  name: deploymentreleasetemplate
 objects:
-- apiVersion: v1
-  kind: Service
-  metadata:
-    annotations:
-      description: This is a service :)
-    labels:
-      app: ${APP_NAME}
-    name: ${APP_NAME}
-    namespace: ${APP_NAMESPACE}
-  spec:
-    ports:
-    - port: 8080
-      targetPort: 8080
-    selector:
-      deploymentConfig: ${APP_NAME}
-- apiVersion: v1
-  id: ${APP_NAME}-https
-  kind: Route
-  metadata:
-    annotations:
-      description: Route for application's https service.
-    labels:
-      app: ${APP_NAME}
-    name: ${APP_NAME}
-    namespace: ${APP_NAMESPACE}
-  spec:
-    tls:
-      termination: edge
-    to:
-      name: ${APP_NAME}
-
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
+    annotations:
+      description: This is a Deployment Configuration.
     labels:
       app: ${APP_NAME}
+      maker: cicd-pipeline
     name: ${APP_NAME}
     namespace: ${APP_NAMESPACE}
   spec:
@@ -117,12 +88,10 @@ objects:
 
 parameters:
 - name: APP_NAME
-  value: name-of-application
   description: "Name of the deployable application."
   displayName: "Application Name"
   required: true
 - name: APP_NAMESPACE
-  value: some-namespace
   description: "Name of the project namespace where the build will reside."
   displayName: "Application Namespace"
   required: true
@@ -130,11 +99,6 @@ parameters:
   value: 512Mi
   description: Container memory limit.
   displayName: Container Memory Limit
-  required: false
-- name: BASE_IMAGE
-  value: redhat-openjdk-18:latest
-  description: Base image name.
-  displayName: Base Image Name
   required: false
 - name: DEPLOYMENT_IMAGE
   description: "Name of the image to deploy."

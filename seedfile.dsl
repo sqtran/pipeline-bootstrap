@@ -8,14 +8,14 @@ pipelineJob(pipelineId) {
 
 node {
   def params = ['projectName' : "$PROJECT_NAME", 'ocpnamespace' : "$OCP_NAMESPACE", 'gitBranch': "$GIT_BRANCH", 'gitUrl': "$GIT_URL"]
-  new com.steve.ocp.PipelineLoader().runPipeline(params)
+  new com.steve.ocp.BuildPipeline().process(params)
 }"""
       )
       sandbox()
       concurrentBuild(false)
     }
 
-    description("This is an auto-generated pipeline\nBuilt from $GIT_BRANCH on $GIT_URL")
+    description("This is an auto-generated build pipeline\nBuilt from $GIT_BRANCH on $GIT_URL")
   }
 }
 
@@ -71,7 +71,7 @@ node {
       concurrentBuild(false)
     }
 
-    description("This is an auto-generated pipeline")
+    description("This is an auto-generated release pipeline")
   }
 
 }

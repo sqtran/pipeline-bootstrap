@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: servicetemplate
+metadata:
+  annotations:
+    description: Generic Service Template for setting up projects in OCP
+    tags: servicetemplate
+    name: servicetemplate
+  name: servicetemplate
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      description: This is a service.
+    labels:
+      app: ${APP_NAME}
+      maker: cicd-pipeline
+    name: ${APP_NAME}
+    namespace: ${APP_NAMESPACE}
+  spec:
+    ports:
+    - port: ${SRC_PORT}
+      targetPort: ${TARGET_PORT}
+    selector:
+      deploymentConfig: ${APP_NAME}
+
+parameters:
+- name: SRC_PORT
+  value: "8080"
+  description: "Ingress Port for this service."
+  displayName: "Service Ingress Port"
+  required: false
+- name: TARGET_PORT
+  value: "8080"
+  description: "Target Port on container for this service."
+  displayName: "Target Port"
+  required: false
+- name: APP_NAME
+  description: "Name of the deployable application."
+  displayName: "Application Name"
+  required: true
+- name: APP_NAMESPACE
+  description: "Name of the project namespace where the build will reside."
+  displayName: "Application Namespace"
+  required: true

@@ -11,7 +11,7 @@ def stage(name, execute, block) {
     })
 }
 
-def runPipeline(def params) {
+def process(def params) {
 
 	def fileLoader = new FileLoader()
 
@@ -153,4 +153,4 @@ def runPipeline(def params) {
 
 		} // end withProject
 	} // end withCluster
-} //end runPipeline
+} //end process
