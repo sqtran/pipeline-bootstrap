@@ -31,7 +31,7 @@ def process(def params) {
 	def qa_image_tag = "${dev_image_tag}-rc-b${getLastSuccess()}"
 	def prod_image_tag = "${dev_image_tag}:pom_version"			//TODO
 
-	def env = getEnvPath(ocpConfig.selectedDeploymentEnv)
+	def env = getEnvPath(params.selectedDeploymentEnv)
 
 	openshift.withCluster("ocp-$env") {
 
