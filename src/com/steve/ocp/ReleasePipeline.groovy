@@ -18,9 +18,9 @@ def getLastSuccess() {
 
 def getEnvPath(def arg) {
 	switch(arg?.trim()?.toLowerCase()) {
-		case "dev" return "dev"
-		case "qa" return "qa"
-		case "prod" return "prod"
+		case "dev": return "dev"
+		case "qa": return "qa"
+		case "prod": return "prod"
 		default: error("Failing build because deployment environment was not found")
 	}
 }
