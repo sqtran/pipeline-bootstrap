@@ -108,10 +108,6 @@ parameters:
   description: Container memory limit.
   displayName: Container Memory Limit
   required: false
-- name: DEPLOYMENT_IMAGE
-  description: "Name of the image to deploy."
-  displayName: "Deployment Image"
-  required: true
 - name: CONFIG_MAP_REF
   description: "Name of the config map reference."
   displayName: "Config Map Reference"
