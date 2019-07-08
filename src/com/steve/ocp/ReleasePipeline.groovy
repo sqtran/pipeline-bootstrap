@@ -79,40 +79,7 @@ def process(def params) {
 		ocpConfig << params
 
 		stage("Process Templates") {
-			def template
-			openshift.withProject(params.ocpnamespace) {
-				if(!openshift.selector("route", [ "app" : "${ocpConfig.projectName}" ]).exists()) {
-					openshift.withCluster("ocp-dev") {
-						template = openshift.withProject("project-steve-dev") {
-							 openshift.selector( "template", "routetemplate").object()
-						}
-					}
-					openshift.create(openshift.process(template, "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}"))
-				}
-
-				if(!openshift.selector("service", [ "app" : "${ocpConfig.projectName}" ]).exists()) {
-					openshift.withCluster("ocp-dev") {
-						template = openshift.withProject("project-steve-dev") {
-							 openshift.selector( "template", "servicetemplate").object()
-						}
-					}
-					openshift.create(openshift.process(template, "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}"))
-				}
-
-				openshift.withCluster("ocp-dev") {
-					template = openshift.withProject("project-steve-dev") {
-						 openshift.selector( "template", "deploymentreleasetemplate").object()
-					}
-				}
-				def dc = openshift.process(template, "-p", "DEPLOYMENT_IMAGE=$ARTIFACTORY_URL/$img_tag", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}")
-
-				if(!openshift.selector("deploymentconfig", [ "app" : "${ocpConfig.projectName}" ]).exists()) {
-					openshift.create(dc)
-				}
-				else {
-					openshift.apply(dc)
-				}
-			}
+				new com.steve.ocp.util.TemplateProcessor().processReleaseTemplates(ocpConfig, "$ARTIFACTORY_URL/$img_tag")
 		}
 
 		stage("Process CM/SK") {
