@@ -50,6 +50,9 @@ def processObject(def appName, def appNamespace, def ocpObject) {
     println "Creating $ocpObject now"
     openshift.create(openshift.process(template, "-p", "APP_NAME=$appName", "-p", "APP_NAMESPACE=$appNamespace"))
   }
+  else {
+    println "$ocpObject exists, nothing to do"
+  }
 }
 
 def processDevelopmentDC(def params) {
@@ -63,6 +66,9 @@ def processDevelopmentDC(def params) {
     println "Creating deploymentconfig now"
     def dc = openshift.process(template, "-p", "APP_NAME=${params.projectName}", "-p", "APP_NAMESPACE=${params.ocpnamespace}", "-p", "CONFIG_MAP_REF=${params.configMapRef}", "-p", "SECRET_KEY_REF=${params.secretKeyRef}", "-p", "READINESS_PROBE=${params.readinessProbe}", "-p", "LIVELINESS_PROBE=${params.livelinessProbe}")
     openshift.create(dc)
+  }
+  else {
+    println "$ocpObject exists, nothing to do"
   }
 }
 
