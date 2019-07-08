@@ -5,7 +5,7 @@ import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 import com.steve.ocp.util.FileLoader
 import com.steve.ocp.util.Sanitizer
 import com.steve.ocp.util.TemplateProcessor
-
+import com.steve.ocp.util.ConfigMapProcessor
 
 def stage(name, execute, block) {
     return stage(name, execute ? block : {
@@ -63,45 +63,13 @@ def process(def params) {
   }
 
 	openshift.withCluster() {
-		openshift.withProject("${ocpConfig.ocpnamespace}") {
 
-			stage("Process CM/SK") {
-
-				// Process Config Map
-				Object data = fileLoader.readConfigMap("$WORKSPACE/ocp/dev/${ocpConfig.configMapRef}.yml")
-				data.metadata.labels['app'] = "${ocpConfig.projectName}"
-				data.metadata.name = "${ocpConfig.configMapRef}"
-
-				def prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
-				if(!prereqs.exists()) {
-					println "ConfigMap ${ocpConfig.configMapRef} doesn't exist, creating now"
-					openshift.create(data)
-				}
-				else {
-					println "ConfigMap ${ocpConfig.configMapRef} exists, updating now"
-					openshift.apply(data)
-				}
-
-				// Process Secret
-				data = fileLoader.readSecret("$WORKSPACE/ocp/dev/${ocpConfig.secretKeyRef}.yml")
-				data.metadata.labels['app'] = "${ocpConfig.projectName}"
-				data.metadata.name = "${ocpConfig.secretKeyRef}"
-
-				prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
-				if(!prereqs.exists()) {
-					println "Secret ${ocpConfig.secretKeyRef} doesn't exist, creating now"
-					openshift.create(data)
-				}
-				else {
-					println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
-					openshift.apply(data)
-				}
-
-			} // end stage
-		} // end withProject
-
-		stage('Process Templates') {
+    stage('Process Templates') {
 			new TemplateProcessor().processBuildTemplates(ocpConfig)
+		}
+
+		stage("Process CM/SK") {
+      new ConfigMapProcessor().processCMSK(ocpConfig, "dev")
 		}
 
 		openshift.withProject("${ocpConfig.ocpnamespace}") {
