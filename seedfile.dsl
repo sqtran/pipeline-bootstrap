@@ -4,7 +4,7 @@ pipelineJob(pipelineId) {
   definition {
     cps {
       script(
-"""@Library('PipelineBootstrap@master') _
+"""@Library('PipelineBootstrap@dev') _
 
 node {
   def params = ['projectName' : "$PROJECT_NAME", 'ocpnamespace' : "$OCP_NAMESPACE", 'gitBranch': "$GIT_BRANCH", 'gitUrl': "$GIT_URL"]
@@ -61,7 +61,7 @@ if (ENVS.equals("QA")) {
   definition {
     cps {
       script(
-"""@Library('PipelineBootstrap@master') _
+"""@Library('PipelineBootstrap@dev') _
 node {
   def params = ['projectName' : "$PROJECT_NAME", 'ocpnamespace' : "$OCP_NAMESPACE", 'selectedImageTag' : "\$IMAGE_TAG", 'selectedDeploymentEnv' : "\$ENVS", 'gitUrl': "$GIT_URL"]
   new com.steve.ocp.ReleasePipeline().process(params)
