@@ -1,6 +1,7 @@
 package com.steve.ocp
 
 import com.steve.ocp.util.FileLoader
+import com.steve.ocp.util.TemplateProcessor
 
 def getLastSuccess() {
 	def lastSuccessfulBuildID = 0
@@ -79,7 +80,7 @@ def process(def params) {
 		ocpConfig << params
 
 		stage("Process Templates") {
-				new com.steve.ocp.util.TemplateProcessor().processReleaseTemplates(ocpConfig, "$ARTIFACTORY_URL/$img_tag")
+				new TemplateProcessor().processReleaseTemplates(ocpConfig, "$ARTIFACTORY_URL/$img_tag")
 		}
 
 		stage("Process CM/SK") {

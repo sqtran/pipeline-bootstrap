@@ -21,8 +21,8 @@ objects:
     namespace: ${APP_NAMESPACE}
   spec:
     ports:
-    - port: ${SRC_PORT}
-      targetPort: ${TARGET_PORT}
+    - port: "${{SRC_PORT}}"
+      targetPort: "${{TARGET_PORT}}"
     selector:
       deploymentConfig: ${APP_NAME}
 
