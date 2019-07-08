@@ -1,7 +1,9 @@
 package com.steve.ocp.util
 
-jenkinscluster   = "ocp-dev"
-jenkinsnamespace = "project-steve-dev"
+import groovy.transform.Field
+
+@Field def jenkinscluster   = "ocp-dev"
+@Field def jenkinsnamespace = "project-steve-dev"
 
 def processReleaseTemplates(def params, def deploymentImageName) {
   openshift.withProject(params.ocpnamespace) {
