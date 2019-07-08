@@ -68,7 +68,7 @@ def processDevelopmentDC(def params) {
     openshift.create(dc)
   }
   else {
-    println "$ocpObject exists, nothing to do"
+    println "deploymentconfig exists, nothing to do"
   }
 }
 
