@@ -42,7 +42,7 @@ def process(def params) {
 
 				if(env == "qa") {
 					// the ARTIFACTORY_URL also includes the path to store the image in Artifactory
-					def results = openshift.raw("image mirror $OCPDEV_REGISTRY_URL/${params.ocpnamespace}/$dev_image_tag $ARTIFACTORY_URL/$qa_image_tag --insecure ")
+					def results = openshift.raw("image mirror $OCPDEV_REGISTRY_URL/${params.ocpnamespace}/$dev_image_tag $ARTIFACTORY_URL/cicd/$qa_image_tag --insecure ")
 	        echo "image mirror results = $results"
 				}
 				else if (env == "prod") {
@@ -59,7 +59,7 @@ def process(def params) {
 
     stage('Get Configs from SCM') {
 			// the image has a reference to the git commit's SHA
-      def image_info = openshift.raw("image info $ARTIFACTORY_URL/$img_tag --insecure")
+      def image_info = openshift.raw("image info $ARTIFACTORY_URL/cicd/$img_tag --insecure")
 			def commitHash = (image_info =~ /GIT_REF=[a-z0-9]+/)[0].split("=")[1] ?: ""
 
 			if(commitHash != "") {
@@ -81,7 +81,7 @@ def process(def params) {
 		ocpConfig << params
 
 		stage("Process Templates") {
-				new TemplateProcessor().processReleaseTemplates(ocpConfig, "$ARTIFACTORY_URL/$img_tag")
+				new TemplateProcessor().processReleaseTemplates(ocpConfig, "$ARTIFACTORY_URL/cicd/$img_tag")
 		}
 
 		stage("Process CM/SK") {

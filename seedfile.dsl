@@ -40,18 +40,22 @@ pipelineJob("${pipelineId}-release") {
 """import groovy.json.JsonSlurper
 import jenkins.model.*
 
-if (ENVS.equals("QA")) {
-  try {
-    def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(com.cloudbees.plugins.credentials.Credentials.class, Jenkins.instance, null, null);
-    def token = creds.find {it.id == 'jenkins-sa-token'}
-    def curl = [ 'bash', '-c', "curl -k https://\$OCPDEV_REGISTRY_URL/v2/$OCP_NAMESPACE/$PROJECT_NAME/tags/list -u any:\${token.getSecret().getPlainText()}"]
-    return new JsonSlurper().parseText(curl.execute().text).tags.sort()
-  } catch (Exception e) {
-      println(e)
+try {
+  def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(com.cloudbees.plugins.credentials.Credentials.class, Jenkins.instance, null, null);
+  def token
+  def curl
+
+  if (ENVS.equals("QA")) {
+    token = creds.find {it.id == 'jenkins-sa-token'}
+    curl = [ 'bash', '-c', "curl -k https://\$OCPDEV_REGISTRY_URL/v2/$OCP_NAMESPACE/$PROJECT_NAME/tags/list -u any:\${token.getSecret().getPlainText()}"]
+  } else if (ENVS.equals("PROD")) {
+    token = creds.find {it.id == 'jfrog-api-key'}
+    curl = [ 'bash', '-c', "curl -H 'X-JFrog-Art-Api:\${token.getSecret().getPlainText()}' '\$ARTIFACTORY_URL/artifactory/api/docker/docker-repo/v2/cicd/$PROJECT_NAME/tags/list' "]
   }
 
-} else if (ENVS.equals("PROD")) {
-  return ["nothing yet"]
+  return new JsonSlurper().parseText(curl.execute().text).tags.sort()
+} catch (Exception e) {
+  println e
 }""")
             fallbackScript('return ["error"]')
         } // end groovyScript
