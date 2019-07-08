@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: buildtemplate
+metadata:
+  annotations:
+    description: Generic Build Template for setting up projects in OCP
+    tags: buildtemplate
+    name: buildtemplate
+  name: buildtemplate
+objects:
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    annotations:
+      description: This is a Build Configuration.
+    labels:
+      app: ${APP_NAME}
+      maker: cicd-pipeline
+    name: ${APP_NAME}
+    namespace: ${APP_NAMESPACE}
+  spec:
+    failedBuildsHistoryLimit: 10
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${APP_NAME}:${IMAGE_TAG}
+    runPolicy: Serial
+    source:
+      type: None
+    strategy:
+      sourceStrategy:
+        forcePull: true
+        from:
+          kind: ImageStreamTag
+          name: ${BASE_IMAGE}
+          namespace: ${IMAGE_STREAM_NAMESPACE}
+    successfulBuildsHistoryLimit: 10
+    triggers: []
+
+parameters:
+- name: APP_NAME
+  value: name-of-application
+  description: "Name of the deployable application."
+  displayName: "Application Name"
+  required: true
+- name: APP_NAMESPACE
+  value: some-namespace
+  description: "Name of the project namespace where the build will reside."
+  displayName: "Application Namespace"
+  required: true
+- name: IMAGE_STREAM_NAMESPACE
+  value: openshift
+  description: "Name of the project namespace where the image streams reside."
+  displayName: "ImageStream Namespace"
+  required: true
+- name: BASE_IMAGE
+  value: redhat-openjdk-18:latest
+  description: Base image name.
+  displayName: Base Image Name
+  required: false
+- name: IMAGE_TAG
+  value: latest
+  description: "The Tag name to apply to the built application image"
+  displayName: "Image Tag"
+  required: false

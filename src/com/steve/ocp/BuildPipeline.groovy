@@ -1,8 +1,11 @@
 package com.steve.ocp
 
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
+
 import com.steve.ocp.util.FileLoader
 import com.steve.ocp.util.Sanitizer
+import com.steve.ocp.util.TemplateProcessor
+
 
 def stage(name, execute, block) {
     return stage(name, execute ? block : {
@@ -14,6 +17,7 @@ def stage(name, execute, block) {
 def process(def params) {
 
 	def fileLoader = new FileLoader()
+
 
   // we sanitize because we assume all input is valid from here on out
   params = new Sanitizer().sanitizePipelineInput(params)
@@ -59,9 +63,7 @@ def process(def params) {
   }
 
 	openshift.withCluster() {
-		def objectsExist
 		openshift.withProject("${ocpConfig.ocpnamespace}") {
-			objectsExist = openshift.selector("all", [ "app" : "${ocpConfig.projectName}" ]).exists()
 
 			stage("Process CM/SK") {
 
@@ -98,12 +100,8 @@ def process(def params) {
 			} // end stage
 		} // end withProject
 
-		openshift.withProject("project-steve-dev") {
-			def templateSelector = openshift.selector( "template", "stevetemplate")
-			stage('Process Template', !objectsExist) {
-				// TODO loop through this to process each parameter
-				openshift.create(templateSelector.process("stevetemplate", "-p", "APP_NAME=${ocpConfig.projectName}", "-p", "APP_NAMESPACE=${ocpConfig.ocpnamespace}", "-p", "CONFIG_MAP_REF=${ocpConfig.configMapRef}", "-p", "SECRET_KEY_REF=${ocpConfig.secretKeyRef}", "-p", "READINESS_PROBE=${ocpConfig.readinessProbe}", "-p", "LIVELINESS_PROBE=${ocpConfig.livelinessProbe}"))
-			}
+		stage('Process Templates') {
+			new TemplateProcessor().processBuildTemplates(ocpConfig)
 		}
 
 		openshift.withProject("${ocpConfig.ocpnamespace}") {

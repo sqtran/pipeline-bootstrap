@@ -1,51 +1,22 @@
 apiVersion: v1
 kind: Template
 labels:
-  template: stevetemplate
+  template: deploymentconfigtemplate-build
 metadata:
   annotations:
-    description: Generic ODFL Application Template for setting up projects in OCP
-    tags: java,springboot
-    name: stevetemplate
-  namespace: project-steve-dev
-  name: stevetemplate
+    description: Generic Deployment Template for setting up projects in OCP
+    tags: deploymentconfigtemplate-build
+    name: deploymentconfigtemplate-build
+  name: deploymentconfigtemplate-build
 objects:
-- apiVersion: v1
-  kind: Service
-  metadata:
-    annotations:
-      description: This is a service :)
-    labels:
-      app: ${APP_NAME}
-    name: ${APP_NAME}
-    namespace: ${APP_NAMESPACE}
-  spec:
-    ports:
-    - port: 8080
-      targetPort: 8080
-    selector:
-      deploymentConfig: ${APP_NAME}
-- apiVersion: v1
-  id: ${APP_NAME}-https
-  kind: Route
-  metadata:
-    annotations:
-      description: Route for application's https service.
-    labels:
-      app: ${APP_NAME}
-    name: ${APP_NAME}
-    namespace: ${APP_NAMESPACE}
-  spec:
-    tls:
-      termination: edge
-    to:
-      name: ${APP_NAME}
-
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
+    annotations:
+      description: This is a Deployment Configuration.
     labels:
       app: ${APP_NAME}
+      maker: cicd-pipeline
     name: ${APP_NAME}
     namespace: ${APP_NAMESPACE}
   spec:
@@ -100,7 +71,7 @@ objects:
           readinessProbe:
             failureThreshold: 3
             httpGet:
-              path: ${READINESS_PROBE}              
+              path: ${READINESS_PROBE}
               port: 8080
               scheme: HTTP
             initialDelaySeconds: 15
@@ -123,71 +94,24 @@ objects:
       type: ImageChange
     - type: ConfigChange
 
-- apiVersion: v1
-  kind: BuildConfig
-  metadata:
-    labels:
-      app: ${APP_NAME}
-    name: ${APP_NAME}
-    namespace: ${APP_NAMESPACE}
-  spec:
-    failedBuildsHistoryLimit: 10
-    nodeSelector: null
-    output:
-      to:
-        kind: ImageStreamTag
-        name: ${APP_NAME}:${IMAGE_TAG}
-    runPolicy: Serial
-    source:
-      type: None
-    strategy:
-      sourceStrategy:
-        forcePull: true
-        from:
-          kind: ImageStreamTag
-          name: ${BASE_IMAGE}
-          namespace: ${IMAGE_STREAM_NAMESPACE}
-    successfulBuildsHistoryLimit: 10
-    triggers: []
-
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    generation: 1
-    labels:
-      app: ${APP_NAME}
-    name: ${APP_NAME}
-    namespace: ${APP_NAMESPACE}
-  spec:
-    lookupPolicy:
-      local: false
-
 parameters:
 - name: APP_NAME
-  value: name-of-application
   description: "Name of the deployable application."
   displayName: "Application Name"
   required: true
 - name: APP_NAMESPACE
-  value: some-namespace
   description: "Name of the project namespace where the build will reside."
   displayName: "Application Namespace"
   required: true
-- name: IMAGE_STREAM_NAMESPACE
-  value: project-steve-dev
-  description: "Name of the project namespace where the image streams reside."
-  displayName: "ImageStream Namespace"
-  required: false
 - name: MEMORY_LIMIT
   value: 512Mi
   description: Container memory limit.
   displayName: Container Memory Limit
   required: false
-- name: BASE_IMAGE
-  value: redhat-openjdk-18:latest
-  description: Base image name.
-  displayName: Base Image Name
-  required: false
+- name: DEPLOYMENT_IMAGE
+  description: "Name of the image to deploy."
+  displayName: "Deployment Image"
+  required: true
 - name: CONFIG_MAP_REF
   description: "Name of the config map reference."
   displayName: "Config Map Reference"
@@ -204,8 +128,3 @@ parameters:
   description: "Readiness probe http endpoint to check."
   displayName: "Readiness Probe URL"
   required: true
-- name: IMAGE_TAG
-  value: latest
-  description: "The Tag name to apply to the built application image"
-  displayName: "Image Tag"
-  required: false

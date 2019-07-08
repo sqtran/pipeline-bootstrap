@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Template
 labels:
-  template: deploymentreleasetemplate
+  template: deploymentconfigtemplate-release
 metadata:
   annotations:
     description: Generic Deployment Template for setting up projects in OCP
-    tags: deploymentreleasetemplate
-    name: deploymentreleasetemplate
-  name: deploymentreleasetemplate
+    tags: deploymentconfigtemplate-release
+    name: deploymentconfigtemplate-release
+  name: deploymentconfigtemplate-release
 objects:
 - apiVersion: v1
   kind: DeploymentConfig

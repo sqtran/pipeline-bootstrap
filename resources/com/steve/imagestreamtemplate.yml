@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: imagestreamtemplate
+metadata:
+  annotations:
+    description: Generic Imagestream Template for setting up projects in OCP
+    tags: imagestreamtemplate
+    name: imagestreamtemplate
+  name: imagestreamtemplate
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      description: This is an Imagestream.
+    generation: 1
+    labels:
+      app: ${APP_NAME}
+      maker: cicd-pipeline
+    name: ${APP_NAME}
+    namespace: ${APP_NAMESPACE}
+  spec:
+    lookupPolicy:
+      local: false
+
+parameters:
+- name: APP_NAME
+  value: name-of-application
+  description: "Name of the deployable application."
+  displayName: "Application Name"
+  required: true
+- name: APP_NAMESPACE
+  value: some-namespace
+  description: "Name of the project namespace where the build will reside."
+  displayName: "Application Namespace"
+  required: true
