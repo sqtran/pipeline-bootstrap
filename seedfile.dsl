@@ -53,7 +53,9 @@ try {
     curl = [ 'bash', '-c', "curl -H 'X-JFrog-Art-Api:\${token.getSecret().getPlainText()}' '\$ARTIFACTORY_URL/artifactory/api/docker/docker-repo/v2/cicd/$PROJECT_NAME/tags/list' "]
   }
 
-  return new JsonSlurper().parseText(curl.execute().text).tags.sort()
+  def jid = UUID.nameUUIDFromBytes("$pipelineId".getBytes()).toString().substring(0,8)
+  return new JsonSlurper().parseText(curl.execute().text).tags.findAll { it.contains(jid) }.sort()
+  
 } catch (Exception e) {
   println e
 }""")
