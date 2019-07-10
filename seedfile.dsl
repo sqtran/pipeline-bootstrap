@@ -1,4 +1,8 @@
-def pipelineId = "${ PIPELINE_NAME ?: PROJECT_NAME }"
+def pipelineId = "$OCP_NAMESPACE/${ PIPELINE_NAME ?: PROJECT_NAME }"
+
+folder("$OCP_NAMESPACE") {
+    description("For projects in $OCP_NAMESPACE namespace")
+}
 
 pipelineJob(pipelineId) {
   definition {
@@ -55,7 +59,7 @@ try {
 
   def jid = UUID.nameUUIDFromBytes("$pipelineId".getBytes()).toString().substring(0,8)
   return new JsonSlurper().parseText(curl.execute().text).tags.findAll { it.contains(jid) }.sort()
-  
+
 } catch (Exception e) {
   println e
 }""")
