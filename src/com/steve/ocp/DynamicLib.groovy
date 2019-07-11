@@ -5,13 +5,16 @@ def process(def params) {
 
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
 
+  // grab the current namespace we're running in
+  def namespace = openshift.withCluster() { openshift.project() }
+
   stage('Checkout') {
     // not good, but necessary until we fix our self-signed certificate issue
     try {
-      git branch: "${params.gitBranch}", credentialsId: 'git-sa', url: "${params.gitUrl}"
+      git branch: "${params.gitBranch}", credentialsId: "$namespace-${params.gitSA}", url: "${params.gitUrl}"
     } catch (Exception e) {
       sh "git config http.sslVerify false"
-      git branch: "${params.gitBranch}", credentialsId: 'git-sa', url: "${params.gitUrl}"
+      git branch: "${params.gitBranch}", credentialsId: "$namespace-${params.gitSA}", url: "${params.gitUrl}"
     }
 
     params['gitDigest'] = sh(script: "git rev-parse HEAD", returnStdout: true).trim()

@@ -60,15 +60,14 @@ objects:
       strategy:
         jenkinsPipelineStrategy:
           env:
-            -
-              name: GIT_REPOSITORY
+            - name: GIT_REPOSITORY
               value: "${GIT_REPOSITORY}"
-            -
-              name: GIT_BRANCH
+            - name: GIT_BRANCH
               value: "${GIT_BRANCH}"
-            -
-              name: APP_NAME
+            - name: APP_NAME
               value: "${APP_NAME}"
+            - name: BUILD_SECRET
+              value: ${BUILD_SECRET}
           jenkinsfile: |-
               pipeline {
                   agent any
@@ -82,7 +81,7 @@ objects:
                                 git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
                                 def code = load 'src/com/steve/ocp/DynamicLib.groovy'
 
-                                def params = ['projectName' : "${APP_NAME}", 'gitBranch': "${GIT_BRANCH}", 'gitUrl': "${GIT_REPOSITORY}"]
+                                def params = ['projectName' : "${APP_NAME}", 'gitBranch': "${GIT_BRANCH}", 'gitUrl': "${GIT_REPOSITORY}", 'gitSA': "${BUILD_SECRET}"]
                                 code.process(params)
                               }
                           }
