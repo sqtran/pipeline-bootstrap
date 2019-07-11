@@ -1,14 +1,9 @@
 
 package com.steve.ocp
 
-
 def process(def params) {
 
-  // this works
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
-
-  // requires scripts approval, which we don't want to deal with with ephemeral jenkins
-  //evaluate(new File("src/com/steve/ocp/util/FileLoader.groovy"))
 
   stage('Checkout') {
     // not good, but necessary until we fix our self-signed certificate issue
@@ -98,6 +93,9 @@ def process(def params) {
 					}
 					return allDone;
 				}
+
+        // time-based because Jenkins is running ephmerally, so current build number can be reset
+        def current_image_tag = "${ocpConfig.projectName}:${artifactVersion}.t${currentBuild.startTimeInMillis}"
 				openshift.tag("${ocpConfig.projectName}:latest", current_image_tag)
 			}
 
