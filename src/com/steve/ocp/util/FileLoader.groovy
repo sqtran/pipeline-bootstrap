@@ -1,8 +1,5 @@
 package com.steve.ocp.util
 
-@Grab('org.yaml:snakeyaml:1.17')
-import org.yaml.snakeyaml.Yaml
-
 def readConfig(def filePath = "./ocp/config.yml") {
 	String[] requiredFields = ["readinessProbe", "livelinessProbe", "secretKeyRef", "configMapRef"]
 	String[] positiveIntFields = ["replicas"]
@@ -30,8 +27,7 @@ def readConfig(def filePath = "./ocp/config.yml") {
 def readConfigMap(def filePath) {
 	def data
 	try {
-		def f = readFile filePath
-		data = new Yaml().load(f)
+		data = readYaml file: filePath
 	} catch(Exception e) {
 		data = [
 			"apiVersion": "v1",
@@ -48,8 +44,7 @@ def readConfigMap(def filePath) {
 def readSecret(def filePath) {
 	def data
 	try {
-		def f = readFile filePath
-		data = new Yaml().load(f)
+		data = readYaml file: filePath
 	} catch(Exception e) {
 		data = [
 			"apiVersion": "v1",
@@ -79,8 +74,7 @@ def sanitize(def data) {
 
 def readYamlFile(def filePath, String errMessage) {
 	try {
-		def f = readFile filePath
-		def data = new Yaml().load(f)
+		def data = readYaml file: filePath
 		return sanitize(data)
 	} catch(FileNotFoundException fnfe) {
 		throw new RuntimeException(errMessage)
