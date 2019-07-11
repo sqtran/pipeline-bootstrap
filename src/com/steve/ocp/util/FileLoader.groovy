@@ -86,3 +86,5 @@ def readYamlFile(def filePath, String errMessage) {
 		throw new RuntimeException(errMessage)
 	}
 }
+
+return this
