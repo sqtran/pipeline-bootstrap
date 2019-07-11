@@ -1,0 +1,234 @@
+---
+apiVersion: v1
+kind: Template
+labels:
+  template: jenkinsstrategy-java-pipeline
+metadata:
+  annotations:
+    description: "Application template for SpringBoot applications built using a Jenkins Pipeline"
+    iconClass: icon-jenkins
+    tags: "java,springboot,jenkins-ci"
+    version: "1.0"
+  name: jenkinsstrategy-java-pipeline
+objects:
+  - apiVersion: v1
+    kind: BuildConfig
+    metadata:
+      annotations:
+        description: This is a Build Configuration.
+      labels:
+        app: ${APP_NAME}
+        maker: jenkinsstrategy-java-pipeline
+      name: ${APP_NAME}
+    spec:
+      failedBuildsHistoryLimit: 10
+      nodeSelector: null
+      output:
+        to:
+          kind: ImageStreamTag
+          name: ${APP_NAME}:latest
+      runPolicy: Serial
+      source:
+        type: None
+      strategy:
+        sourceStrategy:
+          forcePull: true
+          from:
+            kind: ImageStreamTag
+            name: openjdk18-openshift:latest
+            namespace: openshift
+      successfulBuildsHistoryLimit: 10
+      triggers: []
+  - apiVersion: v1
+    kind: BuildConfig
+    metadata:
+      labels:
+        app: "${APP_NAME}"
+        maker: jenkinsstrategy-java-pipeline
+      name: "${APP_NAME}-pipeline"
+    spec:
+      failedBuildsHistoryLimit": 5
+      nodeSelector: ~
+      runPolicy: Serial
+      source:
+        git:
+          ref: "${GIT_BRANCH}"
+          uri: "${GIT_REPOSITORY}"
+        sourceSecret:
+          name: bitbucket-secret
+        type: Git
+      strategy:
+        jenkinsPipelineStrategy:
+          env:
+            -
+              name: GIT_REPOSITORY
+              value: "${GIT_REPOSITORY}"
+            -
+              name: GIT_BRANCH
+              value: "${GIT_BRANCH}"
+            -
+              name: APP_NAME
+              value: "${APP_NAME}"
+          jenkinsfile: |-
+              pipeline {
+                  agent any
+                  stages {
+                      stage("Load Scripts") {
+                          agent {
+                              label 'maven'
+                          }
+                          steps {
+                              script {
+                                git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
+                                def code = load 'src/com/steve/ocp/DynamicLib.groovy'
+
+                                def params = ['projectName' : "${APP_NAME}", 'gitBranch': "${GIT_BRANCH}", 'gitUrl': "${GIT_REPOSITORY}"]
+                                code.process(params)
+                              }
+                          }
+                      }
+                  }
+              }
+        type: JenkinsPipeline
+      successfulBuildsHistoryLimit: 5
+      triggers:
+        -
+          imageChange: ~
+          type: ImageChange
+        -
+          type: ConfigChange
+  -
+    apiVersion: v1
+    kind: ImageStream
+    metadata:
+      labels:
+        app: "${APP_NAME}"
+        maker: jenkinsstrategy-java-pipeline
+      name: "${APP_NAME}"
+    spec:
+      lookupPolicy:
+        local: false
+
+  - apiVersion: v1
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: jenkins-agent
+      labels:
+        role: jenkins-slave
+        maker: jenkinsstrategy-java-pipeline
+    data:
+      template1: |-
+        <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+          <inheritFrom></inheritFrom>
+          <name>maven</name>
+          <instanceCap>2147483647</instanceCap>
+          <idleMinutes>10</idleMinutes>
+          <label>maven</label>
+          <serviceAccount>jenkins</serviceAccount>
+          <nodeSelector></nodeSelector>
+          <volumes/>
+          <containers>
+            <org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
+              <name>jnlp</name>
+              <image>docker-registry.default.svc:5000/openshift/jenkins-agent-maven-35-rhel7:v3.11</image>
+              <privileged>false</privileged>
+              <alwaysPullImage>true</alwaysPullImage>
+              <workingDir>/tmp</workingDir>
+              <command></command>
+              <args>${computer.jnlpmac} ${computer.name}</args>
+              <ttyEnabled>false</ttyEnabled>
+              <resourceRequestCpu></resourceRequestCpu>
+              <resourceRequestMemory></resourceRequestMemory>
+              <resourceLimitCpu></resourceLimitCpu>
+              <resourceLimitMemory></resourceLimitMemory>
+              <envVars/>
+            </org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
+          </containers>
+          <envVars/>
+          <annotations/>
+          <imagePullSecrets/>
+          <nodeProperties/>
+        </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+
+  - apiVersion: v1
+    kind: DeploymentConfig
+    metadata:
+      annotations:
+        description: This is a Deployment Configuration.
+      labels:
+        app: ${APP_NAME}
+        maker: jenkinsstrategy-java-pipeline
+      name: ${APP_NAME}
+    spec:
+      replicas: 1
+      selector:
+        deploymentConfig: ${APP_NAME}
+      strategy:
+        activeDeadlineSeconds: 21600
+        resources: {}
+        rollingParams:
+          intervalSeconds: 1
+          maxSurge: 25%
+          maxUnavailable: 25%
+          timeoutSeconds: 600
+          updatePeriodSeconds: 1
+        type: Rolling
+      template:
+        metadata:
+          labels:
+            app: ${APP_NAME}
+            deploymentConfig: ${APP_NAME}
+          name: ${APP_NAME}
+        spec:
+          containers:
+          - image: ${APP_NAME}
+            imagePullPolicy: Always
+            name: ${APP_NAME}
+            ports:
+            - containerPort: 8778
+              name: jolokia
+              protocol: TCP
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 8443
+              name: https
+              protocol: TCP
+          terminationGracePeriodSeconds: 75
+      triggers:
+      - imageChangeParams:
+          automatic: true
+          containerNames:
+          - ${APP_NAME}
+          from:
+            kind: ImageStreamTag
+            name: ${APP_NAME}:latest
+        type: ImageChange
+      - type: ConfigChange
+
+parameters:
+  -
+    description: "Name of the deployable application."
+    displayName: "Application Name"
+    name: APP_NAME
+    required: true
+    value: name-of-application
+  -
+    description: "Name of the secret for Git credentials."
+    displayName: "Build Secret"
+    name: BUILD_SECRET
+    required: true
+    value: cicd-secret
+  -
+    description: "Git repository for source code."
+    displayName: "Git Repo"
+    name: GIT_REPOSITORY
+    required: true
+    value: "https://github.com/sqtran/spring-boot.git"
+  -
+    description: "Git repository branch to build app from"
+    displayName: "Git Branch"
+    name: GIT_BRANCH
+    required: true
+    value: ocp
