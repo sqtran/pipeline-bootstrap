@@ -29,20 +29,20 @@ def process(def params) {
 	ocpConfig << params
 
   stage('Build') {
-    sh "mvn clean compile -DskipTests"
+    sh "mvn -P ocp clean compile -DskipTests"
   }
 
   stage('Test') {
-    sh "mvn test"
+    sh "mvn -P ocp test"
   }
 
   stage('Package') {
-    sh "mvn -Dmaven.test.failure.ignore package -DskipTests"
+    sh "mvn -P ocp -Dmaven.test.failure.ignore package -DskipTests"
   }
 
 
   openshift.withCluster() {
-    openshift.withProject("steve-test1") {
+    openshift.withProject() {
 
       // Process Config Map
       Object data = fileLoader.readConfigMap("ocp/dev/${ocpConfig.configMapRef}.yml")
