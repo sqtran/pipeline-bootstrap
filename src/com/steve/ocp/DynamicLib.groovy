@@ -31,15 +31,15 @@ def process(def params) {
 	ocpConfig << params
 
   stage('Build') {
-    sh "mvn -s $MAVEN_SETTINGS clean compile -DskipTests"
+    sh "mvn clean compile -DskipTests"
   }
 
   stage('Test') {
-    sh "mvn -s $MAVEN_SETTINGS test"
+    sh "mvn test"
   }
 
   stage('Package') {
-    sh "mvn -s $MAVEN_SETTINGS -Dmaven.test.failure.ignore package -DskipTests"
+    sh "mvn -Dmaven.test.failure.ignore package -DskipTests"
   }
 
 
