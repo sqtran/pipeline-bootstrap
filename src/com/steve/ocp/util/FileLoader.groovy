@@ -5,10 +5,10 @@ def readConfig(def filePath = "./ocp/config.yml") {
 	String[] positiveIntFields = ["replicas"]
 	def config = readYamlFile(filePath, "A config.yml file is required")
 
-	StringBuilder err = new StringBuilder("")
+	def err = ""
 	requiredFields.each {
 		if(config["${it}"] == null || config["${it}"] == "") {
-			err.append("${it} is a required field\n")
+			err << "${it} is a required field\n"
 		}
 	}
 
