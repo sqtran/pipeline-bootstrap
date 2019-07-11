@@ -4,7 +4,11 @@ package com.steve.ocp
 
 def process(def params) {
 
+  // this works
+  def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
 
+  // requires scripts approval, which we don't want to deal with with ephemeral jenkins
+  //evaluate(new File("src/com/steve/ocp/util/FileLoader.groovy"))
 
   stage('Checkout') {
     // not good, but necessary until we fix our self-signed certificate issue
@@ -22,11 +26,7 @@ def process(def params) {
   artifactName = "${pom.name}"
   artifactVersion = "${pom.version}"
 
-  evaluate(new File("./src/com/steve/ocp/util/FileLoader.groovy"))
-
-  def fileLoader = new FileLoader()
-
-  ocpConfig = fileLoader.readConfig("$WORKSPACE/ocp/config.yml")
+  ocpConfig = fileLoader.readConfig("./ocp/config.yml")
 
 
   openshift.withCluster() {
@@ -34,6 +34,7 @@ def process(def params) {
       echo "Hello from project ${openshift.project()} in cluster ${openshift.cluster()} with params $params"
     }
   }
-}
+
+} // end def
 
 return this
