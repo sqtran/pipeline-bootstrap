@@ -28,16 +28,19 @@ def process(def params) {
   // load in the Jenkins parameters into the configuration object so we have everything in one place
 	ocpConfig << params
 
+  def profile = pom.profiles.find { it.id == "ocp" }
+  def p = profile ? "-P ${profile.id}" : ""
+
   stage('Build') {
-    sh "mvn -P ocp clean compile -DskipTests"
+    sh "mvn clean compile -DskipTests $p"
   }
 
   stage('Test') {
-    sh "mvn -P ocp test"
+    sh "mvn test $p"
   }
 
   stage('Package') {
-    sh "mvn -P ocp -Dmaven.test.failure.ignore package -DskipTests"
+    sh "mvn -Dmaven.test.failure.ignore package -DskipTests $p"
   }
 
 
