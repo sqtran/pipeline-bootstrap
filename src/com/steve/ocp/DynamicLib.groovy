@@ -62,6 +62,12 @@ def process(def params) {
         openshift.apply(data)
       }
 
+      try {
+        openshift.raw("set env dc/${ocpConfig.projectName} --from configmap/${ocpConfig.configMapRef}")
+      } catch (Exception e) {
+
+      }
+
       // Process Secret
       data = fileLoader.readSecret("ocp/dev/${ocpConfig.secretKeyRef}.yml")
       data.metadata.labels['app'] = "${ocpConfig.projectName}"
@@ -76,6 +82,13 @@ def process(def params) {
         println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
         openshift.apply(data)
       }
+
+      try {
+        openshift.raw("set env dc/${ocpConfig.projectName} --from secret/${ocpConfig.secretKeyRef}")
+      } catch (Exception e) {
+
+      }
+
 
       def bc = openshift.selector("buildconfig", "${ocpConfig.projectName}")
 			stage('OCP Upload Binary') {
