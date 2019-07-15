@@ -72,6 +72,18 @@ objects:
               pipeline {
                   agent any
                   stages {
+                      stage("Provision Agents") {
+                        steps {
+                          script {
+                            openshift.withCluster() {
+                              openshift.withProject(){
+                                openshift.raw("apply -f https://raw.githubusercontent.com/sqtran/pipeline-bootstrap/dynamic-lib/resources/com/steve/jenkinsPodTemplate.yml")
+                              }
+                            }
+                          }
+                        }
+                      }
+
                       stage("Load Scripts") {
                           agent {
                               label 'maven'
@@ -107,48 +119,6 @@ objects:
     spec:
       lookupPolicy:
         local: false
-
-  - apiVersion: v1
-    kind: ConfigMap
-    apiVersion: v1
-    metadata:
-      name: jenkins-agent
-      labels:
-        role: jenkins-slave
-        maker: jenkinsstrategy-java-pipeline
-    data:
-      template1: |-
-        <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
-          <inheritFrom></inheritFrom>
-          <name>maven</name>
-          <instanceCap>2147483647</instanceCap>
-          <idleMinutes>10</idleMinutes>
-          <label>maven</label>
-          <serviceAccount>jenkins</serviceAccount>
-          <nodeSelector></nodeSelector>
-          <volumes/>
-          <containers>
-            <org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
-              <name>jnlp</name>
-              <image>docker-registry.default.svc:5000/openshift/jenkins-agent-maven-35-rhel7:v3.11</image>
-              <privileged>false</privileged>
-              <alwaysPullImage>true</alwaysPullImage>
-              <workingDir>/tmp</workingDir>
-              <command></command>
-              <args>${computer.jnlpmac} ${computer.name}</args>
-              <ttyEnabled>false</ttyEnabled>
-              <resourceRequestCpu></resourceRequestCpu>
-              <resourceRequestMemory></resourceRequestMemory>
-              <resourceLimitCpu></resourceLimitCpu>
-              <resourceLimitMemory></resourceLimitMemory>
-              <envVars/>
-            </org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
-          </containers>
-          <envVars/>
-          <annotations/>
-          <imagePullSecrets/>
-          <nodeProperties/>
-        </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
 
   - apiVersion: v1
     kind: DeploymentConfig
