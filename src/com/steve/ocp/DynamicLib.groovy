@@ -92,7 +92,7 @@ def process(def params) {
 
       def bc = openshift.selector("buildconfig", "${ocpConfig.projectName}")
 			stage('OCP Upload Binary') {
-				sh """mkdir -p target/ocptarget/.s2i && find -type f \\( -iname '*.jar' -not -iname '*-sources.jar' \\) -exec mv {} target/ocptarget/${artifactName}.jar \\; && echo "GIT_REF=${ocpConfig.gitDigest}" > target/ocptarget/.s2i/environment"""
+				sh """mkdir -p target/ocptarget/.s2i && find -type f \\( -iname '*.jar' -not -iname '*-sources.jar' \\) -exec mv {} target/ocptarget/${artifactName}.jar \\; && printf "GIT_REF=${ocpConfig.gitDigest}\nGIT_URL=${params.gitUrl}" > target/ocptarget/.s2i/environment"""
 				bc.startBuild("--from-dir=target/ocptarget")
 				bc.logs("-f")
 			}
