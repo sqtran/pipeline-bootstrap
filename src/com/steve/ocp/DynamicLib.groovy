@@ -131,9 +131,92 @@ def process(def params) {
       } // end stage
 
       echo "Hello from project ${openshift.project()} in cluster ${openshift.cluster()} with params $ocpConfig"
-    }
-  }
 
-} // end def
+    } // end withProject
+  } //end withCluster
+} // end def process
+
+
+def release(def params) {
+
+  def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
+
+  openshift.withCluster() {
+    openshift.withProject() {
+
+      stage('Get Configs from SCM') {
+  			// the image has a reference to the git commit's SHA
+        def image_info = openshift.raw("image info ${params.image} --insecure")
+  			def commitHash = (image_info =~ /GIT_REF=[\w*-]+/)[0].split("=")[1] ?: ""
+        def gitRepo    = (image_info =~ /GIT_REPO=[\w*-:]+/)[0].split("=")[1] ?: ""
+
+  			if(commitHash != "") {
+  				// not good, but necessary until we fix our self-signed certificate issue
+  				try {
+  					checkout([$class: 'GitSCM', branches: [[name: commitHash ]], userRemoteConfigs: [[credentialsId: "${openshift.project()}-${params.gitSA}", url: gitRepo]]])
+  				} catch (Exception e) {
+  					println e
+  					sh "git config http.sslVerify false"
+  					checkout([$class: 'GitSCM', branches: [[name: commitHash ]], userRemoteConfigs: [[credentialsId: "${openshift.project()}-${params.gitSA}", url: gitRepo]]])
+  				}
+  			}
+      }
+
+      ocpConfig = fileLoader.readConfig("./ocp/config.yml")
+
+
+      stage("Process CMSK") {
+
+
+              // Process Config Map
+              Object data = fileLoader.readConfigMap("ocp/qa/${ocpConfig.configMapRef}.yml")
+              data.metadata.labels['app'] = "${ocpConfig.projectName}"
+              data.metadata.name = "${ocpConfig.configMapRef}"
+
+              def prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
+              if(!prereqs.exists()) {
+                println "ConfigMap ${ocpConfig.configMapRef} doesn't exist, creating now"
+                openshift.create(data)
+              }
+              else {
+                println "ConfigMap ${ocpConfig.configMapRef} exists, updating now"
+                openshift.apply(data)
+              }
+
+              try {
+                openshift.raw("set env dc/${ocpConfig.projectName} --from configmap/${ocpConfig.configMapRef}")
+              } catch (Exception e) {
+
+              }
+
+              // Process Secret
+              data = fileLoader.readSecret("ocp/dev/${ocpConfig.secretKeyRef}.yml")
+              data.metadata.labels['app'] = "${ocpConfig.projectName}"
+              data.metadata.name = "${ocpConfig.secretKeyRef}"
+
+              prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
+              if(!prereqs.exists()) {
+                println "Secret ${ocpConfig.secretKeyRef} doesn't exist, creating now"
+                openshift.create(data)
+              }
+              else {
+                println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
+                openshift.apply(data)
+              }
+
+              try {
+                openshift.raw("set env dc/${ocpConfig.projectName} --from secret/${ocpConfig.secretKeyRef}")
+              } catch (Exception e) {
+
+              }
+
+
+      }
+
+
+
+    } // end withProject
+  } // end withCluster
+} // end def release
 
 return this
