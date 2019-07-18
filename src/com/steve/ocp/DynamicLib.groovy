@@ -148,7 +148,7 @@ def release(def params) {
   			// the image has a reference to the git commit's SHA
         def image_info = openshift.raw("image info ${params.image} --insecure")
   			def commitHash = (image_info =~ /GIT_REF=[\w*-]+/)[0].split("=")[1] ?: ""
-        def gitRepo    = (image_info =~ /GIT_REPO=[\w*-:]+/)[0].split("=")[1] ?: ""
+        def gitRepo    = (image_info =~ /GIT_URL=[\w*-:]+/)[0].split("=")[1] ?: ""
 
   			if(commitHash != "") {
   				// not good, but necessary until we fix our self-signed certificate issue
