@@ -166,8 +166,6 @@ def release(def params) {
 
 
       stage("Process CMSK") {
-
-
               // Process Config Map
               Object data = fileLoader.readConfigMap("ocp/qa/${ocpConfig.configMapRef}.yml")
               data.metadata.labels['app'] = "${ocpConfig.projectName}"
@@ -209,10 +207,20 @@ def release(def params) {
               } catch (Exception e) {
 
               }
-
-
       }
 
+      stage("Verify Rollout") {
+
+				// Scale if user had specified a specific number of replicas, otherwise just do whatever is already configured in OCP
+				def desiredReplicas = ocpConfig.replicas
+				if(desiredReplicas != null) {
+					openshift.raw("scale deploymentconfig ${ocpConfig.projectName} --replicas=$desiredReplicas")
+				}
+
+				timeout(time: 2, unit: 'MINUTES') {
+					openshift.selector('dc', ocpConfig.projectName).rollout().latest().status()
+				}
+  		}
 
 
     } // end withProject
