@@ -163,7 +163,7 @@ def release(def params) {
       }
 
       ocpConfig = fileLoader.readConfig("./ocp/config.yml")
-
+      ocpConfig << params
 
       stage("Process CMSK") {
               // Process Config Map
@@ -210,6 +210,8 @@ def release(def params) {
       }
 
       stage("Verify Rollout") {
+
+        openshift.raw("import-image ${ocpConfig.projectName}:deploy --confirm ${params.image} --insecure")
 
 				// Scale if user had specified a specific number of replicas, otherwise just do whatever is already configured in OCP
 				def desiredReplicas = ocpConfig.replicas
