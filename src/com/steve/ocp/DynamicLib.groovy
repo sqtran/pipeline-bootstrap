@@ -146,7 +146,7 @@ def release(def params) {
 
       stage('Get Configs from SCM') {
   			// the image has a reference to the git commit's SHA
-        def image_info = openshift.raw("image info ${params.image} --insecure")
+        def image_info = openshift.raw("image info ${params.containerRegistry}/cicd/${params.image} --insecure")
   			def commitHash = (image_info =~ /GIT_REF=[\w*-]+/)[0].split("=")[1] ?: ""
         def gitRepo    = (image_info =~ /GIT_URL=[\w*-:]+/)[0].split("=")[1] ?: ""
 
@@ -211,7 +211,8 @@ def release(def params) {
 
       stage("Verify Rollout") {
 
-        openshift.raw("import-image ${ocpConfig.projectName}:deploy --confirm ${params.image} --insecure")
+        openshift.raw("tag ${params.containerRegistry}/cicd/${params.image} ${params.image}")
+        openshift.raw("import-image ${params.image} --confirm ${params.containerRegistry}/cicd/${params.image} --insecure")
 
 				// Scale if user had specified a specific number of replicas, otherwise just do whatever is already configured in OCP
 				def desiredReplicas = ocpConfig.replicas
