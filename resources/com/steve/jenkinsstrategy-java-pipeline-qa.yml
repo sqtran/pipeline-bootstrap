@@ -73,18 +73,11 @@ objects:
       labels:
         app: "${APP_NAME}"
         maker: jenkinsstrategy-java-pipeline-qa
-      name: "${APP_NAME}-pipeline-prd"
+      name: "${APP_NAME}-pipeline-qa-release"
     spec:
       failedBuildsHistoryLimit": 5
       nodeSelector: ~
       runPolicy: Serial
-      source:
-        git:
-          ref: "${GIT_BRANCH}"
-          uri: "${GIT_REPOSITORY}"
-        sourceSecret:
-          name: bitbucket-secret
-        type: Git
       strategy:
         jenkinsPipelineStrategy:
           jenkinsfile: |-
@@ -140,7 +133,7 @@ objects:
         description: This is a service.
       labels:
         app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline-dev
+        maker: jenkinsstrategy-java-pipeline-qa
       name: ${APP_NAME}
     spec:
       ports:
@@ -169,7 +162,7 @@ objects:
         maker: jenkinsstrategy-java-pipeline-qa
       name: ${APP_NAME}
     spec:
-      replicas: 0
+      replicas: 1
       selector:
         deploymentConfig: ${APP_NAME}
       strategy:
