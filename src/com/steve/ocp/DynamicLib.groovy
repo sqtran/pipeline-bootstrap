@@ -166,47 +166,47 @@ def release(def params) {
       ocpConfig << params
 
       stage("Process CMSK") {
-              // Process Config Map
-              Object data = fileLoader.readConfigMap("ocp/qa/${ocpConfig.configMapRef}.yml")
-              data.metadata.labels['app'] = "${ocpConfig.projectName}"
-              data.metadata.name = "${ocpConfig.configMapRef}"
+        // Process Config Map
+        Object data = fileLoader.readConfigMap("ocp/qa/${ocpConfig.configMapRef}.yml")
+        data.metadata.labels['app'] = "${ocpConfig.projectName}"
+        data.metadata.name = "${ocpConfig.configMapRef}"
 
-              def prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
-              if(!prereqs.exists()) {
-                println "ConfigMap ${ocpConfig.configMapRef} doesn't exist, creating now"
-                openshift.create(data)
-              }
-              else {
-                println "ConfigMap ${ocpConfig.configMapRef} exists, updating now"
-                openshift.apply(data)
-              }
+        def prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
+        if(!prereqs.exists()) {
+          println "ConfigMap ${ocpConfig.configMapRef} doesn't exist, creating now"
+          openshift.create(data)
+        }
+        else {
+          println "ConfigMap ${ocpConfig.configMapRef} exists, updating now"
+          openshift.apply(data)
+        }
 
-              try {
-                openshift.raw("set env dc/${ocpConfig.projectName} --from configmap/${ocpConfig.configMapRef}")
-              } catch (Exception e) {
+        try {
+          openshift.raw("set env dc/${ocpConfig.projectName} --from configmap/${ocpConfig.configMapRef}")
+        } catch (Exception e) {
 
-              }
+        }
 
-              // Process Secret
-              data = fileLoader.readSecret("ocp/dev/${ocpConfig.secretKeyRef}.yml")
-              data.metadata.labels['app'] = "${ocpConfig.projectName}"
-              data.metadata.name = "${ocpConfig.secretKeyRef}"
+        // Process Secret
+        data = fileLoader.readSecret("ocp/dev/${ocpConfig.secretKeyRef}.yml")
+        data.metadata.labels['app'] = "${ocpConfig.projectName}"
+        data.metadata.name = "${ocpConfig.secretKeyRef}"
 
-              prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
-              if(!prereqs.exists()) {
-                println "Secret ${ocpConfig.secretKeyRef} doesn't exist, creating now"
-                openshift.create(data)
-              }
-              else {
-                println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
-                openshift.apply(data)
-              }
+        prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
+        if(!prereqs.exists()) {
+          println "Secret ${ocpConfig.secretKeyRef} doesn't exist, creating now"
+          openshift.create(data)
+        }
+        else {
+          println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
+          openshift.apply(data)
+        }
 
-              try {
-                openshift.raw("set env dc/${ocpConfig.projectName} --from secret/${ocpConfig.secretKeyRef}")
-              } catch (Exception e) {
+        try {
+          openshift.raw("set env dc/${ocpConfig.projectName} --from secret/${ocpConfig.secretKeyRef}")
+        } catch (Exception e) {
 
-              }
+        }
       }
 
       stage("Verify Rollout") {
@@ -229,5 +229,90 @@ def release(def params) {
     } // end withProject
   } // end withCluster
 } // end def release
+
+def promote(def params) {
+
+  def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
+
+  openshift.withCluster() {
+    openshift.withProject() {
+
+      def userInput = true
+      def timeoutRejected = false
+
+      def namespace = openshift.project()
+
+      try {
+         stage("Approval") {
+             timeout(time: 15, unit: 'SECONDS') { // change to a convenient timeout for you
+                 userInput = input(
+                 id: 'Proceed1', message: 'Was this successful?', parameters: [
+                 [$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Please confirm you agree with this']
+                 ])
+             }
+         }
+      } catch(err) { // timeout reached or input false
+         timeoutRejected = true
+         currentBuild.result = 'FAILURE'
+      }
+
+      if (timeoutRejected) {
+           // we timed out or user rejected input
+           echo "timedout or rejected by user"
+       } else if (userInput) {
+
+
+         def image_info = openshift.raw("image info ${params.containerRegistry}/cicd/${params.image} --insecure")
+   			 def commitHash = (image_info =~ /GIT_REF=[\w*-]+/)[0].split("=")[1] ?: ""
+         def gitRepo    = (image_info =~ /GIT_URL=[\w*-:]+/)[0].split("=")[1] ?: ""
+
+     			if(commitHash != "") {
+     				// not good, but necessary until we fix our self-signed certificate issue
+     				try {
+     					checkout([$class: 'GitSCM', branches: [[name: commitHash ]], userRemoteConfigs: [[credentialsId: "${openshift.project()}-${params.gitSA}", url: gitRepo]]])
+     				} catch (Exception e) {
+     					println e
+     					sh "git config http.sslVerify false"
+     					checkout([$class: 'GitSCM', branches: [[name: commitHash ]], userRemoteConfigs: [[credentialsId: "${openshift.project()}-${params.gitSA}", url: gitRepo]]])
+     				}
+     			}
+
+          pom = readMavenPom file: 'pom.xml'
+          artifactName = "${pom.name}"
+          artifactVersion = "${pom.version}"
+
+
+          withCredentials([string(credentialsId: "${namespace}-${params.containerRegistryApiKey}", variable: 'APIKEY')]) {
+
+            def img = "${params.image}".split(":")[0]
+            def tag = "${params.image}".split(":")[1]
+
+           sh """
+          curl -k -X POST '${params.containerRegistry}/artifactory/api/docker/docker-release-local/v2/promote' \
+            -H 'cache-control: no-cache' \
+            -H 'content-type: application/json' \
+            -H 'x-jfrog-art-api: $APIKEY' \
+            -d '{ "targetRepo" : "docker-release-local",
+                  "dockerRepository" : "cicd/$img",
+                  "tag": "$tag",
+                  "targetTag": "$artifactVersion",
+                  "copy" : true}'
+               """
+         }
+
+           echo "this was successful"
+
+       } else {
+           // do something else
+           echo "this was not successful"
+           currentBuild.result = 'FAILURE'
+       }
+
+
+     }
+  }
+
+}
+
 
 return this

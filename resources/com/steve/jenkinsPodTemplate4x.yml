@@ -21,7 +21,7 @@ data:
         <containers>
           <org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate>
             <name>jnlp</name>
-            <image>docker-registry.default.svc:5000/openshift4/ose-jenkins-agent-maven:latest</image>
+            <image>docker-registry.default.svc:5000/openshift/ose-jenkins-agent-maven:latest</image>
             <privileged>false</privileged>
             <alwaysPullImage>true</alwaysPullImage>
             <workingDir>/tmp</workingDir>
