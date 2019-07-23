@@ -7,7 +7,8 @@ metadata:
   annotations:
     description: "Application template for SpringBoot applications built using a Jenkins Pipeline"
     iconClass: icon-jenkins
-    tags: "java,springboot,jenkins-ci"
+    openshift.io/display-name: JenkinsStrategy Java Pipeline for DEV
+    tags: "java,springboot,jenkins-ci,jenkins"
     version: "1.0"
   name: jenkinsstrategy-java-pipeline-dev
 objects:
@@ -184,6 +185,32 @@ objects:
     spec:
       lookupPolicy:
         local: false
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        description: This is a service.
+      labels:
+        app: ${APP_NAME}
+        maker: jenkinsstrategy-java-pipeline-dev
+      name: ${APP_NAME}
+    spec:
+      ports:
+      - name: 8080-tcp
+        port: 8080
+        protocol: TCP
+        targetPort: 8080
+      - name: 8443-tcp
+        port: 8443
+        protocol: TCP
+        targetPort: 8443
+      - name: 8778-tcp
+        port: 8778
+        protocol: TCP
+        targetPort: 8778
+      selector:
+        deploymentConfig: ${APP_NAME}
 
   - apiVersion: v1
     kind: DeploymentConfig
