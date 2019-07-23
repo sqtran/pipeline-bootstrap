@@ -1,8 +1,6 @@
 ---
 apiVersion: v1
 kind: Template
-labels:
-  template: jenkinsstrategy-java-pipeline-qa
 metadata:
   annotations:
     description: "Application template for SpringBoot applications built using a Jenkins Pipeline"
@@ -57,7 +55,7 @@ objects:
                                 git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
                                 def code = load 'src/com/steve/ocp/DynamicLib.groovy'
 
-                                def params = ['projectName' : "${APP_NAME}", 'image': "${IMAGE}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry': "${CONTAINER_REGISTRY}", "containerRegistryApiKey": "${CONTAINER_REGISTRY_SECRET}"]
+                                def params = ['projectName' : "${APP_NAME}", 'image': "${APP_NAME}:${IMAGE_TAG}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry': "${CONTAINER_REGISTRY}", "containerRegistryApiKey": "${CONTAINER_REGISTRY_SECRET}"]
                                 code.release(params)
                               }
                           }
@@ -105,7 +103,7 @@ objects:
                                 git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
                                 def code = load 'src/com/steve/ocp/DynamicLib.groovy'
 
-                                def params = ['projectName' : "${APP_NAME}", 'image': "${IMAGE}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry': "${CONTAINER_REGISTRY}", "containerRegistryApiKey": "${CONTAINER_REGISTRY_SECRET}"]
+                                def params = ['projectName' : "${APP_NAME}", 'image': "${APP_NAME}:${IMAGE_TAG}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry': "${CONTAINER_REGISTRY}", "containerRegistryApiKey": "${CONTAINER_REGISTRY_SECRET}"]
                                 code.promote(params)
                               } // end script
                           } // end steps
@@ -183,7 +181,7 @@ objects:
           name: ${APP_NAME}
         spec:
           containers:
-          - image: ${CONTAINER_REGISTRY}/cicd/${IMAGE}
+          - image: ${CONTAINER_REGISTRY}/cicd/${APP_NAME}:${IMAGE_TAG}
             imagePullPolicy: Always
             name: ${APP_NAME}
             ports:
@@ -206,12 +204,6 @@ parameters:
     required: true
     value: name-of-application
   -
-    description: "Image to deploy into QA, should come from Artifactory with :deploy tag"
-    displayName: "QA Image"
-    name: IMAGE
-    required: true
-    value: <appname>:deploy
-  -
     description: "Name of the secret for Git credentials."
     displayName: "Build Secret"
     name: BUILD_SECRET
@@ -229,3 +221,9 @@ parameters:
     name: CONTAINER_REGISTRY
     required: true
     value: "docker-repo.build-repo.steve.com"
+  -
+    description: "Image Tag to deploy into QA, this must be available in your Container Registry."
+    displayName: "QA Image Tag"
+    name: IMAGE_TAG
+    required: true
+    value: deploy

@@ -1,8 +1,6 @@
 ---
 apiVersion: v1
 kind: Template
-labels:
-  template: jenkinsstrategy-java-pipeline-dev
 metadata:
   annotations:
     description: "Application template for SpringBoot applications built using a Jenkins Pipeline"
@@ -268,6 +266,18 @@ parameters:
     required: true
     value: name-of-application
   -
+    description: "Git repository for source code."
+    displayName: "Git Repo"
+    name: GIT_REPOSITORY
+    required: true
+    value: "https://github.com/sqtran/spring-boot.git"
+  -
+    description: "Git repository branch to build app from"
+    displayName: "Git Branch"
+    name: GIT_BRANCH
+    required: true
+    value: master
+  -
     description: "Name of the secret for Git credentials."
     displayName: "Build Secret"
     name: BUILD_SECRET
@@ -280,20 +290,8 @@ parameters:
     required: true
     value: artifactory-secret
   -
-    description: "Git repository for source code."
-    displayName: "Git Repo"
-    name: GIT_REPOSITORY
-    required: true
-    value: "https://github.com/sqtran/spring-boot.git"
-  -
     description: "External container Registry for promotions."
     displayName: "External Container Registry"
     name: CONTAINER_REGISTRY
     required: true
     value: "docker-repo.build-repo.steve.com"
-  -
-    description: "Git repository branch to build app from"
-    displayName: "Git Branch"
-    name: GIT_BRANCH
-    required: true
-    value: ocp
