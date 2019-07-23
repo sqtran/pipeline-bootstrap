@@ -134,7 +134,7 @@ def process(def params) {
         }
 
         timeout(time: 2, unit: 'MINUTES') {
-          openshift.selector('dc', ocpConfig.projectName).rollout().latest().status()
+          openshift.selector('dc', ocpConfig.projectName).rollout().latest()
         }
       } // end stage
 
@@ -232,7 +232,7 @@ def release(def params) {
 				}
 
 				timeout(time: 2, unit: 'MINUTES') {
-					openshift.selector('dc', ocpConfig.projectName).rollout().status()
+					openshift.selector('dc', ocpConfig.projectName).rollout().latest()
 				}
   		}
 
