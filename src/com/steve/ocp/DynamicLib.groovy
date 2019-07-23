@@ -6,7 +6,15 @@ def process(def params) {
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
 
   // grab the current namespace we're running in
-  def namespace = openshift.withCluster() { openshift.project() }
+  def namespace
+
+  // apply labels to our secret so they sync with Jenkins
+  openshift.withCluster() {
+    openshift.withProject() {
+        namespace = openshift.project()
+        openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
+    }
+  }
 
   stage('Checkout') {
     // not good, but necessary until we fix our self-signed certificate issue
@@ -144,6 +152,9 @@ def release(def params) {
   openshift.withCluster() {
     openshift.withProject() {
 
+      // apply labels to our secret so they sync with Jenkins
+      openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
+
       stage('Get Configs from SCM') {
   			// the image has a reference to the git commit's SHA
         def image_info = openshift.raw("image info ${params.containerRegistry}/cicd/${params.image} --insecure")
@@ -236,6 +247,10 @@ def promote(def params) {
 
   openshift.withCluster() {
     openshift.withProject() {
+
+      // apply labels to our secret so they sync with Jenkins
+      openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
+      openshift.raw("label secret ${params.containerRegistryApiKey} credential.sync.jenkins.openshift.io=true --overwrite")
 
       def userInput = true
       def timeoutRejected = false
