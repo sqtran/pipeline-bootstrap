@@ -2,14 +2,14 @@
 apiVersion: v1
 kind: Template
 labels:
-  template: jenkinsstrategy-java-pipeline
+  template: jenkinsstrategy-java-pipeline-dev
 metadata:
   annotations:
     description: "Application template for SpringBoot applications built using a Jenkins Pipeline"
     iconClass: icon-jenkins
     tags: "java,springboot,jenkins-ci"
     version: "1.0"
-  name: jenkinsstrategy-java-pipeline
+  name: jenkinsstrategy-java-pipeline-dev
 objects:
   - apiVersion: v1
     kind: BuildConfig
@@ -18,7 +18,7 @@ objects:
         description: This is a Build Configuration.
       labels:
         app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline
+        maker: jenkinsstrategy-java-pipeline-dev
       name: ${APP_NAME}
     spec:
       failedBuildsHistoryLimit: 5
@@ -47,7 +47,7 @@ objects:
         description: This is a Build Configuration.
       labels:
         app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline
+        maker: jenkinsstrategy-java-pipeline-dev
       name: ${APP_NAME}-rc
     spec:
       failedBuildsHistoryLimit: 5
@@ -75,7 +75,7 @@ objects:
     metadata:
       labels:
         app: "${APP_NAME}"
-        maker: jenkinsstrategy-java-pipeline
+        maker: jenkinsstrategy-java-pipeline-dev
       name: "${APP_NAME}-pipeline"
     spec:
       failedBuildsHistoryLimit": 5
@@ -145,7 +145,7 @@ objects:
     metadata:
       labels:
         app: "${APP_NAME}"
-        maker: jenkinsstrategy-java-pipeline
+        maker: jenkinsstrategy-java-pipeline-dev
       name: "${APP_NAME}-pipeline-rc"
     spec:
       failedBuildsHistoryLimit": 5
@@ -179,7 +179,7 @@ objects:
     metadata:
       labels:
         app: "${APP_NAME}"
-        maker: jenkinsstrategy-java-pipeline
+        maker: jenkinsstrategy-java-pipeline-dev
       name: "${APP_NAME}"
     spec:
       lookupPolicy:
@@ -192,7 +192,7 @@ objects:
         description: This is a Deployment Configuration.
       labels:
         app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline
+        maker: jenkinsstrategy-java-pipeline-dev
       name: ${APP_NAME}
     spec:
       replicas: 1
