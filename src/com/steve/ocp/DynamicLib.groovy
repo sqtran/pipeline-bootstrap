@@ -4,21 +4,18 @@ package com.steve.ocp
 def process(def params) {
 
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
-
-  // grab the current namespace we're running in
-  def namespace
+  def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
 
   // apply labels to our secret so they sync with Jenkins
   openshift.withCluster() {
     openshift.withProject() {
-        namespace = openshift.project()
         openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
     }
   }
 
   stage('Checkout') {
     def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
-    gitter.checkout(params.gitUrl, params.gitBranch, "$namespace-${params.gitSA}")
+    gitter.checkout(params.gitUrl, params.gitBranch, "${openshift.project()}-${params.gitSA}")
     params['gitDigest'] = gitter.digest()
   }
 
@@ -121,16 +118,8 @@ def process(def params) {
 			}
 
       stage ('Verify DEV Deploy') {
-        // Scale if user had specified a specific number of replicas, otherwise just do whatever is already configured in OCP
-        def desiredReplicas = ocpConfig.replicas
-        if(desiredReplicas != null) {
-          openshift.raw("scale deploymentconfig ${ocpConfig.projectName} --replicas=$desiredReplicas")
-        }
-
-        timeout(time: 2, unit: 'MINUTES') {
-          openshift.selector('dc', ocpConfig.projectName).rollout().latest()
-        }
-      } // end stage
+        roller.rollout(ocpConfig.projectName, ocpConfig.replicas)
+      }
 
       echo "Hello from project ${openshift.project()} in cluster ${openshift.cluster()} with params $ocpConfig"
 
@@ -142,6 +131,7 @@ def process(def params) {
 def release(def params) {
 
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
+  def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
 
   openshift.withCluster() {
     openshift.withProject() {
@@ -180,7 +170,7 @@ def release(def params) {
         }
 
         // Process Secret
-        data = fileLoader.readSecret("ocp/dev/${ocpConfig.secretKeyRef}.yml")
+        data = fileLoader.readSecret("ocp/qa/${ocpConfig.secretKeyRef}.yml")
         data.metadata.labels['app'] = "${ocpConfig.projectName}"
         data.metadata.name = "${ocpConfig.secretKeyRef}"
 
@@ -202,19 +192,9 @@ def release(def params) {
       }
 
       stage("Verify Rollout") {
-
         openshift.raw("tag ${params.containerRegistry}/cicd/${params.image} ${params.image}")
         openshift.raw("import-image ${params.image} --confirm ${params.containerRegistry}/cicd/${params.image} --insecure")
-
-				// Scale if user had specified a specific number of replicas, otherwise just do whatever is already configured in OCP
-				def desiredReplicas = ocpConfig.replicas
-				if(desiredReplicas != null) {
-					openshift.raw("scale deploymentconfig ${ocpConfig.projectName} --replicas=$desiredReplicas")
-				}
-
-				timeout(time: 2, unit: 'MINUTES') {
-					openshift.selector('dc', ocpConfig.projectName).rollout().latest()
-				}
+        roller.rollout(ocpConfig.projectName, ocpConfig.replicas)
   		}
 
 
@@ -254,7 +234,6 @@ def promote(def params) {
            // we timed out or user rejected input
            echo "timedout or rejected by user"
        } else if (userInput) {
-
 
           def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
           gitter.checkoutFromImage("${params.containerRegistry}/cicd/${params.image}", "${openshift.project()}-${params.gitSA}")
