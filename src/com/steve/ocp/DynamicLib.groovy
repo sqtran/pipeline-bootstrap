@@ -17,15 +17,9 @@ def process(def params) {
   }
 
   stage('Checkout') {
-    // not good, but necessary until we fix our self-signed certificate issue
-    try {
-      git branch: "${params.gitBranch}", credentialsId: "$namespace-${params.gitSA}", url: "${params.gitUrl}"
-    } catch (Exception e) {
-      sh "git config http.sslVerify false"
-      git branch: "${params.gitBranch}", credentialsId: "$namespace-${params.gitSA}", url: "${params.gitUrl}"
-    }
-
-    params['gitDigest'] = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+    def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+    gitter.checkout(params.gitUrl, params.gitBranch, "$namespace-${params.gitSA}")
+    params['gitDigest'] = gitter.digest()
   }
 
   pom = readMavenPom file: 'pom.xml'
@@ -156,21 +150,8 @@ def release(def params) {
       openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
 
       stage('Get Configs from SCM') {
-  			// the image has a reference to the git commit's SHA
-        def image_info = openshift.raw("image info ${params.containerRegistry}/cicd/${params.image} --insecure")
-  			def commitHash = (image_info =~ /GIT_REF=[\w*-]+/)[0].split("=")[1] ?: ""
-        def gitRepo    = (image_info =~ /GIT_URL=[\w*-:]+/)[0].split("=")[1] ?: ""
-
-  			if(commitHash != "") {
-  				// not good, but necessary until we fix our self-signed certificate issue
-  				try {
-  					checkout([$class: 'GitSCM', branches: [[name: commitHash ]], userRemoteConfigs: [[credentialsId: "${openshift.project()}-${params.gitSA}", url: gitRepo]]])
-  				} catch (Exception e) {
-  					println e
-  					sh "git config http.sslVerify false"
-  					checkout([$class: 'GitSCM', branches: [[name: commitHash ]], userRemoteConfigs: [[credentialsId: "${openshift.project()}-${params.gitSA}", url: gitRepo]]])
-  				}
-  			}
+        def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+        gitter.checkoutFromImage("${params.containerRegistry}/cicd/${params.image}", "${openshift.project()}-${params.gitSA}")
       }
 
       ocpConfig = fileLoader.readConfig("./ocp/config.yml")
@@ -255,8 +236,6 @@ def promote(def params) {
       def userInput = true
       def timeoutRejected = false
 
-      def namespace = openshift.project()
-
       try {
          stage("Approval") {
              timeout(time: 15, unit: 'SECONDS') { // change to a convenient timeout for you
@@ -277,27 +256,13 @@ def promote(def params) {
        } else if (userInput) {
 
 
-         def image_info = openshift.raw("image info ${params.containerRegistry}/cicd/${params.image} --insecure")
-   			 def commitHash = (image_info =~ /GIT_REF=[\w*-]+/)[0].split("=")[1] ?: ""
-         def gitRepo    = (image_info =~ /GIT_URL=[\w*-:]+/)[0].split("=")[1] ?: ""
-
-     			if(commitHash != "") {
-     				// not good, but necessary until we fix our self-signed certificate issue
-     				try {
-     					checkout([$class: 'GitSCM', branches: [[name: commitHash ]], userRemoteConfigs: [[credentialsId: "${openshift.project()}-${params.gitSA}", url: gitRepo]]])
-     				} catch (Exception e) {
-     					println e
-     					sh "git config http.sslVerify false"
-     					checkout([$class: 'GitSCM', branches: [[name: commitHash ]], userRemoteConfigs: [[credentialsId: "${openshift.project()}-${params.gitSA}", url: gitRepo]]])
-     				}
-     			}
+          def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+          gitter.checkoutFromImage("${params.containerRegistry}/cicd/${params.image}", "${openshift.project()}-${params.gitSA}")
 
           pom = readMavenPom file: 'pom.xml'
-          artifactName = "${pom.name}"
           artifactVersion = "${pom.version}"
 
-
-          withCredentials([string(credentialsId: "${namespace}-${params.containerRegistryApiKey}", variable: 'APIKEY')]) {
+          withCredentials([string(credentialsId: "${openshift.project()}-${params.containerRegistryApiKey}", variable: 'APIKEY')]) {
 
             def img = "${params.image}".split(":")[0]
             def tag = "${params.image}".split(":")[1]
