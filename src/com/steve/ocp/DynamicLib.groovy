@@ -5,6 +5,7 @@ def process(def params) {
 
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
   def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
+  def envUtil = load "src/com/steve/ocp/util/EnvUtil.groovy"
 
   // apply labels to our secret so they sync with Jenkins
   openshift.withCluster() {
@@ -46,48 +47,13 @@ def process(def params) {
   openshift.withCluster() {
     openshift.withProject() {
 
-      // Process Config Map
-      Object data = fileLoader.readConfigMap("ocp/dev/${ocpConfig.configMapRef}.yml")
-      data.metadata.labels['app'] = "${ocpConfig.projectName}"
-      data.metadata.name = "${ocpConfig.configMapRef}"
+      stage("Process CM/SK") {
+        Object data = fileLoader.readConfigMap("ocp/dev/${ocpConfig.configMapRef}.yml")
+        envUtil.processCM(ocpConfig.configMapRef, ocpConfig.projectName, data)
 
-      def prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
-      if(!prereqs.exists()) {
-        println "ConfigMap ${ocpConfig.configMapRef} doesn't exist, creating now"
-        openshift.create(data)
+        data = fileLoader.readSecret("ocp/dev/${ocpConfig.secretKeyRef}.yml")
+        envUtil.processSK(ocpConfig.secretKeyRef, ocpConfig.projectName, data)
       }
-      else {
-        println "ConfigMap ${ocpConfig.configMapRef} exists, updating now"
-        openshift.apply(data)
-      }
-
-      try {
-        openshift.raw("set env dc/${ocpConfig.projectName} --from configmap/${ocpConfig.configMapRef}")
-      } catch (Exception e) {
-
-      }
-
-      // Process Secret
-      data = fileLoader.readSecret("ocp/dev/${ocpConfig.secretKeyRef}.yml")
-      data.metadata.labels['app'] = "${ocpConfig.projectName}"
-      data.metadata.name = "${ocpConfig.secretKeyRef}"
-
-      prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
-      if(!prereqs.exists()) {
-        println "Secret ${ocpConfig.secretKeyRef} doesn't exist, creating now"
-        openshift.create(data)
-      }
-      else {
-        println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
-        openshift.apply(data)
-      }
-
-      try {
-        openshift.raw("set env dc/${ocpConfig.projectName} --from secret/${ocpConfig.secretKeyRef}")
-      } catch (Exception e) {
-
-      }
-
 
       def bc = openshift.selector("buildconfig", "${ocpConfig.projectName}")
 			stage('OCP Upload Binary') {
@@ -132,6 +98,7 @@ def release(def params) {
 
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
   def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
+  def envUtil = load "src/com/steve/ocp/util/EnvUtil.groovy"
 
   openshift.withCluster() {
     openshift.withProject() {
@@ -147,48 +114,12 @@ def release(def params) {
       ocpConfig = fileLoader.readConfig("./ocp/config.yml")
       ocpConfig << params
 
-      stage("Process CMSK") {
-        // Process Config Map
+      stage("Process CM/SK") {
         Object data = fileLoader.readConfigMap("ocp/qa/${ocpConfig.configMapRef}.yml")
-        data.metadata.labels['app'] = "${ocpConfig.projectName}"
-        data.metadata.name = "${ocpConfig.configMapRef}"
+        envUtil.processCM(ocpConfig.configMapRef, ocpConfig.projectName, data)
 
-        def prereqs = openshift.selector( "configmap", "${ocpConfig.configMapRef}" )
-        if(!prereqs.exists()) {
-          println "ConfigMap ${ocpConfig.configMapRef} doesn't exist, creating now"
-          openshift.create(data)
-        }
-        else {
-          println "ConfigMap ${ocpConfig.configMapRef} exists, updating now"
-          openshift.apply(data)
-        }
-
-        try {
-          openshift.raw("set env dc/${ocpConfig.projectName} --from configmap/${ocpConfig.configMapRef}")
-        } catch (Exception e) {
-
-        }
-
-        // Process Secret
         data = fileLoader.readSecret("ocp/qa/${ocpConfig.secretKeyRef}.yml")
-        data.metadata.labels['app'] = "${ocpConfig.projectName}"
-        data.metadata.name = "${ocpConfig.secretKeyRef}"
-
-        prereqs = openshift.selector( "secret", "${ocpConfig.secretKeyRef}" )
-        if(!prereqs.exists()) {
-          println "Secret ${ocpConfig.secretKeyRef} doesn't exist, creating now"
-          openshift.create(data)
-        }
-        else {
-          println "Secret ${ocpConfig.secretKeyRef} exists, updating now"
-          openshift.apply(data)
-        }
-
-        try {
-          openshift.raw("set env dc/${ocpConfig.projectName} --from secret/${ocpConfig.secretKeyRef}")
-        } catch (Exception e) {
-
-        }
+        envUtil.processSK(ocpConfig.secretKeyRef, ocpConfig.projectName, data)
       }
 
       stage("Verify Rollout") {
