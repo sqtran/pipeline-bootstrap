@@ -9,14 +9,14 @@ def process(def params) {
   // apply labels to our secret so they sync with Jenkins
   openshift.withCluster() {
     openshift.withProject() {
-        openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
-    }
-  }
+      openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
 
-  stage('Checkout') {
-    def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
-    gitter.checkout(params.gitUrl, params.gitBranch, "${openshift.project()}-${params.gitSA}")
-    params['gitDigest'] = gitter.digest()
+      stage('Checkout') {
+        def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+        gitter.checkout(params.gitUrl, params.gitBranch, "${openshift.project()}-${params.gitSA}")
+        params['gitDigest'] = gitter.digest()
+      }
+    }
   }
 
   pom = readMavenPom file: 'pom.xml'
