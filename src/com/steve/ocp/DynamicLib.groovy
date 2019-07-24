@@ -198,11 +198,75 @@ def promote(def params) {
            currentBuild.result = 'FAILURE'
        }
 
-
      }
   }
-
 }
 
+
+def production(def params) {
+
+  def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
+  def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
+  def envUtil = load "src/com/steve/ocp/util/EnvUtil.groovy"
+
+  openshift.withCluster() {
+    openshift.withProject() {
+
+      // apply labels to our secret so they sync with Jenkins
+      openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
+      openshift.raw("label secret ${params.containerRegistryApiKey} credential.sync.jenkins.openshift.io=true --overwrite")
+
+      stage('Get Configs from SCM') {
+        def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+        gitter.checkoutFromImage("${params.containerRegistry}/cicd/${params.image}", "${openshift.project()}-${params.gitSA}")
+      }
+
+      ocpConfig = fileLoader.readConfig("./ocp/config.yml")
+      ocpConfig << params
+
+      stage("Process CM/SK") {
+        Object data = fileLoader.readConfigMap("ocp/prod/${ocpConfig.configMapRef}.yml")
+        envUtil.processCM(ocpConfig.configMapRef, ocpConfig.projectName, data)
+
+        data = fileLoader.readSecret("ocp/prod/${ocpConfig.secretKeyRef}.yml")
+        envUtil.processSK(ocpConfig.secretKeyRef, ocpConfig.projectName, data)
+      }
+
+      def latestTag
+
+      stage("Update Image Stream Tags") {
+
+        withCredentials([string(credentialsId: "${openshift.project()}-${params.containerRegistryApiKey}", variable: 'APIKEY')]) {
+          def curl = """curl -k -X POST ${params.containerRegistry}/artifactory/api/search/aql \
+          -H 'cache-control: no-cache' \
+          -H 'content-type: text/plain' \
+          -H 'x-jfrog-art-api: $APIKEY' \
+          -d 'items.find({"repo": {"\$eq": "docker-release-local"}, "path": {"\$match": "cicd/${params.projectName}/*"},"name": {"\$eq": "manifest.json"}}).include("repo", "path", "name", "updated").sort ({ "\$desc": ["updated"] } )' """
+          println curl
+          curl = sh (returnStdout: true, script: curl)
+          def json = readJSON text: curl
+
+          json.results.each {
+              def parts = it.path.split "/"
+
+              // The first one is the newest tag
+              if(latestTag == null) {
+                latestTag = parts[2]
+              }
+
+              openshift.raw ("tag --source=docker ${params.containerRegistry}/${parts[0]}/${parts[1]}:${parts[2]} ${parts[1]}:${parts[2]}")
+          }
+        }
+
+      }
+
+      stage("Verify Rollout") {
+        openshift.raw("""patch dc ${ocpConfig.projectName} --patch='{"spec":{"template":{"spec":{"containers":[{"name": "${params.projectName}", "image":"docker-registry.default.svc:5000/${openshift.project()}/${params.projectName}:$latestTag"}]}}}}'""")
+        roller.rollout(ocpConfig.projectName, ocpConfig.replicas)
+      }
+
+    } // end withProject
+  } // end withCluster
+} // end def production
 
 return this
