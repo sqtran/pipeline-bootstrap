@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Template
 metadata:
   annotations:
-    description: "Application template for SpringBoot applications built using a Jenkins Pipeline"
+    description: "Application template for SpringBoot applications built using an ephemeral Jenkins Pipeline"
     iconClass: icon-jenkins
     openshift.io/display-name: JenkinsStrategy Java Pipeline for QA
     template.openshift.io/bindable: "false"
@@ -161,7 +161,7 @@ objects:
         maker: jenkinsstrategy-java-pipeline-qa
       name: ${APP_NAME}
     spec:
-      replicas: 1
+      replicas: 0
       selector:
         deploymentConfig: ${APP_NAME}
       strategy:

@@ -5,78 +5,19 @@ metadata:
   annotations:
     description: "Application template for SpringBoot applications built using an ephemeral Jenkins Pipeline"
     iconClass: icon-jenkins
-    openshift.io/display-name: JenkinsStrategy Java Pipeline for DEV
+    openshift.io/display-name: JenkinsStrategy Java Pipeline for PROD
     template.openshift.io/bindable: "false"
     tags: "java,springboot,jenkins-ci,jenkins"
     version: "1.0"
-  name: jenkinsstrategy-java-pipeline-dev
+  name: jenkinsstrategy-java-pipeline-prod
 objects:
-  - apiVersion: v1
-    kind: BuildConfig
-    metadata:
-      annotations:
-        description: This is a Build Configuration.
-      labels:
-        app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline-dev
-      name: ${APP_NAME}
-    spec:
-      failedBuildsHistoryLimit: 5
-      nodeSelector: null
-      output:
-        to:
-          kind: ImageStreamTag
-          name: ${APP_NAME}:latest
-      runPolicy: Serial
-      source:
-        type: None
-      strategy:
-        sourceStrategy:
-          forcePull: true
-          from:
-            kind: ImageStreamTag
-            name: openjdk18-openshift:latest
-            namespace: openshift
-      successfulBuildsHistoryLimit: 5
-      triggers: []
-
-  - apiVersion: v1
-    kind: BuildConfig
-    metadata:
-      annotations:
-        description: This is a Build Configuration.
-      labels:
-        app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline-dev
-      name: ${APP_NAME}-rc
-    spec:
-      failedBuildsHistoryLimit: 5
-      nodeSelector: ~
-      output:
-        pushSecret:
-          name: ${DEPLOY_SECRET}
-        to:
-          kind: DockerImage
-          name: ${CONTAINER_REGISTRY}/cicd/${APP_NAME}:deploy
-      runPolicy: Serial
-      source:
-        type: None
-      strategy:
-        sourceStrategy:
-          forcePull: true
-          from:
-            kind: ImageStreamTag
-            name: ${APP_NAME}:latest
-      successfulBuildsHistoryLimit: 5
-      triggers: []
-
   - apiVersion: v1
     kind: BuildConfig
     metadata:
       labels:
         app: "${APP_NAME}"
-        maker: jenkinsstrategy-java-pipeline-dev
-      name: "${APP_NAME}-pipeline"
+        maker: jenkinsstrategy-java-pipeline-prod
+      name: "${APP_NAME}-pipeline-prod"
     spec:
       failedBuildsHistoryLimit": 5
       nodeSelector: ~
@@ -99,7 +40,7 @@ objects:
                           script {
                             openshift.withCluster() {
                               openshift.withProject(){
-                                openshift.raw("apply -f https://raw.githubusercontent.com/sqtran/pipeline-bootstrap/dynamic-lib/resources/com/steve/jenkinsPodTemplate.yml")
+                                openshift.raw("apply -f https://raw.githubusercontent.com/sqtran/pipeline-bootstrap/dynamic-lib/resources/com/steve/jenkinsPodTemplate4x.yml")
                               }
                             }
                           }
@@ -115,53 +56,12 @@ objects:
                                 git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
                                 def code = load 'src/com/steve/ocp/DynamicLib.groovy'
 
-                                def params = ['projectName' : "${APP_NAME}", 'gitBranch': "${GIT_BRANCH}", 'gitUrl': "${GIT_REPOSITORY}", 'gitSA': "${BUILD_SECRET}"]
-                                code.process(params)
+                                def params = ['projectName' : "${APP_NAME}", 'image': "${APP_NAME}:${IMAGE_TAG}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry': "${CONTAINER_REGISTRY}", "containerRegistryApiKey": "${CONTAINER_REGISTRY_SECRET}"]
+                                code.production(params)
                               }
                           }
                       }
                   }
-              }
-        type: JenkinsPipeline
-      successfulBuildsHistoryLimit: 5
-      triggers:
-        -
-          imageChange: ~
-          type: ImageChange
-        -
-          type: ConfigChange
-
-  - apiVersion: v1
-    kind: BuildConfig
-    metadata:
-      labels:
-        app: "${APP_NAME}"
-        maker: jenkinsstrategy-java-pipeline-dev
-      name: "${APP_NAME}-pipeline-rc"
-    spec:
-      failedBuildsHistoryLimit": 5
-      nodeSelector: ~
-      runPolicy: Serial
-      strategy:
-        jenkinsPipelineStrategy:
-          jenkinsfile: |-
-              pipeline {
-                agent any
-                stages {
-                  stage("Push RC to Registry") {
-                    steps {
-                      script {
-                        openshift.withCluster() {
-                          openshift.withProject(){
-                            def bc = openshift.selector("buildconfig", "${APP_NAME}-rc")
-                            bc.startBuild()
-                            bc.logs("-f")
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
               }
         type: JenkinsPipeline
       successfulBuildsHistoryLimit: 5
@@ -171,7 +71,7 @@ objects:
     metadata:
       labels:
         app: "${APP_NAME}"
-        maker: jenkinsstrategy-java-pipeline-dev
+        maker: jenkinsstrategy-java-pipeline-prod
       name: "${APP_NAME}"
     spec:
       lookupPolicy:
@@ -184,7 +84,7 @@ objects:
         description: This is a service.
       labels:
         app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline-dev
+        maker: jenkinsstrategy-java-pipeline-prod
       name: ${APP_NAME}
     spec:
       ports:
@@ -210,10 +110,10 @@ objects:
         description: This is a Deployment Configuration.
       labels:
         app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline-dev
+        maker: jenkinsstrategy-java-pipeline-prod
       name: ${APP_NAME}
     spec:
-      replicas: 1
+      replicas: 0
       selector:
         deploymentConfig: ${APP_NAME}
       strategy:
@@ -234,7 +134,7 @@ objects:
           name: ${APP_NAME}
         spec:
           containers:
-          - image: ${APP_NAME}
+          - image: ${CONTAINER_REGISTRY}/cicd/${APP_NAME}:${IMAGE_TAG}
             imagePullPolicy: Always
             name: ${APP_NAME}
             ports:
@@ -248,16 +148,6 @@ objects:
               name: https
               protocol: TCP
           terminationGracePeriodSeconds: 75
-      triggers:
-      - imageChangeParams:
-          automatic: true
-          containerNames:
-          - ${APP_NAME}
-          from:
-            kind: ImageStreamTag
-            name: ${APP_NAME}:latest
-        type: ImageChange
-      - type: ConfigChange
 
 parameters:
   -
@@ -267,18 +157,6 @@ parameters:
     required: true
     value: name-of-application
   -
-    description: "Git repository for source code."
-    displayName: "Git Repo"
-    name: GIT_REPOSITORY
-    required: true
-    value: "https://github.com/sqtran/spring-boot.git"
-  -
-    description: "Git repository branch to build app from"
-    displayName: "Git Branch"
-    name: GIT_BRANCH
-    required: true
-    value: master
-  -
     description: "Name of the secret for Git credentials."
     displayName: "Build Secret"
     name: BUILD_SECRET
@@ -287,7 +165,7 @@ parameters:
   -
     description: "Name of the secret for External Registry credentials."
     displayName: "External Registry Secret"
-    name: DEPLOY_SECRET
+    name: CONTAINER_REGISTRY_SECRET
     required: true
     value: artifactory-secret
   -
@@ -296,3 +174,9 @@ parameters:
     name: CONTAINER_REGISTRY
     required: true
     value: "docker-repo.build-repo.steve.com"
+  -
+    description: "Image Tag to deploy into QA, this must be available in your Container Registry."
+    displayName: "QA Image Tag"
+    name: IMAGE_TAG
+    required: true
+    value: deploy
