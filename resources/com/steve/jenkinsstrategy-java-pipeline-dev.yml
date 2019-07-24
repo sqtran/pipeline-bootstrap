@@ -6,6 +6,7 @@ metadata:
     description: "Application template for SpringBoot applications built using a Jenkins Pipeline"
     iconClass: icon-jenkins
     openshift.io/display-name: JenkinsStrategy Java Pipeline for DEV
+    template.openshift.io/bindable: "false"
     tags: "java,springboot,jenkins-ci,jenkins"
     version: "1.0"
   name: jenkinsstrategy-java-pipeline-dev
@@ -93,7 +94,7 @@ objects:
               pipeline {
                   agent any
                   stages {
-                      stage("Provision Agents") {
+                      stage("Check Pod Configs") {
                         steps {
                           script {
                             openshift.withCluster() {
@@ -105,7 +106,7 @@ objects:
                         }
                       }
 
-                      stage("Load Scripts") {
+                      stage("Wait for Pod") {
                           agent {
                               label 'maven'
                           }
