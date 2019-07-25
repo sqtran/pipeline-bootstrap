@@ -8,7 +8,7 @@ def rollout(def projectName, def desiredReplicas) {
   }
 
   timeout(time: 2, unit: 'MINUTES') {
-    openshift.selector('deploymentconfig', projectName).rollout().latest()
+    //openshift.selector('deploymentconfig', projectName).rollout().latest()
     openshift.selector('deploymentconfig', projectName).rollout().status()
   }
 
