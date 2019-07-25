@@ -1,7 +1,5 @@
 package com.steve.ocp.util
 
-
-
 def start(def buildConfig, def artifactName, def envs) {
   def envstring = envs.inject([]) { result, entry ->
       result << "${entry.key}=${entry.value}"

@@ -1,6 +1,7 @@
 
 package com.steve.ocp
 
+// builds an image
 def process(def params) {
 
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
@@ -42,7 +43,6 @@ def process(def params) {
     sh "mvn -Dmaven.test.failure.ignore package -DskipTests $p"
   }
 
-
   openshift.withCluster() {
     openshift.withProject() {
 
@@ -54,7 +54,6 @@ def process(def params) {
         envUtil.processSK(ocpConfig.secretKeyRef, ocpConfig.projectName, data)
       }
 
-      def bc = openshift.selector("buildconfig", "${ocpConfig.projectName}")
 			stage('Build Image') {
         def envmap = ["GIT_REF": ocpConfig.gitDigest, "GIT_URL": params.gitUrl]
         buildUtil.start(ocpConfig.projectName, pom.artifactId, envmap)
@@ -81,6 +80,7 @@ def process(def params) {
 } // end def process
 
 
+// Takes the "deploy" tag from Artifactory and rolls it out into QA
 def release(def params) {
 
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
@@ -118,14 +118,12 @@ def release(def params) {
         roller.rollout(ocpConfig.projectName, ocpConfig.replicas)
   		}
 
-
     } // end withProject
   } // end withCluster
 } // end def release
 
+// takes the latest deployed image from QA and tags it with its POM version in Artifactory
 def promote(def params) {
-
-  def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
 
   openshift.withCluster() {
     openshift.withProject() {
@@ -157,29 +155,14 @@ def promote(def params) {
        } else if (userInput) {
 
           def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+          def artifactoryUtil = load "src/com/steve/ocp/util/ArtifactoryUtil.groovy"
+
           gitter.checkoutFromImage("${params.containerRegistry}/cicd/${params.image}", "${openshift.project()}-${params.gitSA}")
 
           pom = readMavenPom file: 'pom.xml'
+          artifactoryUtil.tag( "${openshift.project()}-${params.containerRegistryApiKey}", params.containerRegistry, params.image, pom.version )
 
-          withCredentials([string(credentialsId: "${openshift.project()}-${params.containerRegistryApiKey}", variable: 'APIKEY')]) {
-
-            def img = "${params.image}".split(":")[0]
-            def tag = "${params.image}".split(":")[1]
-
-           sh """
-          curl -k -X POST '${params.containerRegistry}/artifactory/api/docker/docker-release-local/v2/promote' \
-            -H 'cache-control: no-cache' \
-            -H 'content-type: application/json' \
-            -H 'x-jfrog-art-api: $APIKEY' \
-            -d '{ "targetRepo" : "docker-release-local",
-                  "dockerRepository" : "cicd/$img",
-                  "tag": "$tag",
-                  "targetTag": "${pom.version}",
-                  "copy" : true}'
-               """
-         }
-
-           echo "this was successful"
+          echo "this was successful"
 
        } else {
            // do something else
@@ -187,16 +170,17 @@ def promote(def params) {
            currentBuild.result = 'FAILURE'
        }
 
-     }
-  }
-}
+     } // end withProject
+  } // end withCluster
+} // end def promote
 
-
+// Pulls image from Artifactory and rolls it out in production
 def production(def params) {
 
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
   def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
   def envUtil = load "src/com/steve/ocp/util/EnvUtil.groovy"
+  def artifactoryUtil = load "src/com/steve/ocp/util/ArtifactoryUtil.groovy"
 
   openshift.withCluster() {
     openshift.withProject() {
@@ -224,29 +208,15 @@ def production(def params) {
       def latestTag
 
       stage("Update Image Stream Tags") {
-
-        withCredentials([string(credentialsId: "${openshift.project()}-${params.containerRegistryApiKey}", variable: 'APIKEY')]) {
-          def curl = """curl -k -X POST ${params.containerRegistry}/artifactory/api/search/aql \
-          -H 'cache-control: no-cache' \
-          -H 'content-type: text/plain' \
-          -H 'x-jfrog-art-api: $APIKEY' \
-          -d 'items.find({"repo": {"\$eq": "docker-release-local"}, "path": {"\$match": "cicd/${params.projectName}/*"},"name": {"\$eq": "manifest.json"}}).include("repo", "path", "name", "updated").sort ({ "\$desc": ["updated"] } )' """
-          println curl
-          curl = sh (returnStdout: true, script: curl)
-          def json = readJSON text: curl
-
-          json.results.each {
-              def parts = it.path.split "/"
-
-              // The first one is the newest tag
-              if(latestTag == null) {
-                latestTag = parts[2]
-              }
-
-              openshift.raw ("tag --source=docker ${params.containerRegistry}/${parts[0]}/${parts[1]}:${parts[2]} ${parts[1]}:${parts[2]}")
-          }
+        def json = artifactoryUtil.getTags("${openshift.project()}-${params.containerRegistryApiKey}", params.containerRegistry, params.projectName)
+        json.results.each {
+            def parts = it.path.split "/"
+            // The first one is the newest tag
+            if(latestTag == null) {
+              latestTag = parts[2]
+            }
+            openshift.raw ("tag --source=docker ${params.containerRegistry}/${parts[0]}/${parts[1]}:${parts[2]} ${parts[1]}:${parts[2]}")
         }
-
       }
 
       stage("Verify Rollout") {
