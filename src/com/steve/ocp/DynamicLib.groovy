@@ -6,6 +6,7 @@ def process(def params) {
   def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
   def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
   def envUtil = load "src/com/steve/ocp/util/EnvUtil.groovy"
+  def buildUtil = load "src/com/steve/ocp/util/BuildUtil.groovy"
 
   // apply labels to our secret so they sync with Jenkins
   openshift.withCluster() {
@@ -21,7 +22,7 @@ def process(def params) {
   }
 
   pom = readMavenPom file: 'pom.xml'
-  artifactName = "${pom.name}"
+  artifactName = "${pom.artifactId}"
   artifactVersion = "${pom.version}"
 
   ocpConfig = fileLoader.readConfig("./ocp/config.yml")
@@ -57,33 +58,21 @@ def process(def params) {
 
       def bc = openshift.selector("buildconfig", "${ocpConfig.projectName}")
 			stage('OCP Upload Binary') {
-				sh """mkdir -p target/ocptarget/.s2i && find -type f \\( -iname '*.jar' -not -iname '*-sources.jar' \\) -exec mv {} target/ocptarget/${artifactName}.jar \\; && printf "GIT_REF=${ocpConfig.gitDigest}\nGIT_URL=${params.gitUrl}" > target/ocptarget/.s2i/environment"""
-				bc.startBuild("--from-dir=target/ocptarget")
-				bc.logs("-f")
+        def envmap = ["GIT_REF": ocpConfig.gitDigest, "GIT_URL": params.gitUrl]
+        buildUtil.start(ocpConfig.projectName, artifactName, envmap)
 			}
 
       stage ('Verify Build') {
-				def builds = bc.related('builds')
-				builds.watch {
-					if ( it.count() == 0 ) return false
-					// A robust script should not assume that only one build has been created, so we will need to iterate through all builds.
-					def allDone = true
-					it.withEach {
-						// 'it' is now bound to a Selector selecting a single object for this iteration.  Let's model it in Groovy to check its status.
-						def buildModel = it.object()
-						if ( it.object().status.phase != "Complete" ) {
-							allDone = false
-						}
-					}
-					return allDone;
-				}
-
-        // time-based because Jenkins is running ephmerally, so current build number can be reset
-        def current_image_tag = "${ocpConfig.projectName}:${artifactVersion}.t${currentBuild.startTimeInMillis}"
-				openshift.tag("${ocpConfig.projectName}:latest", current_image_tag)
+				buildUtil.verify(ocpConfig.projectName)
 			}
 
-      stage ('Verify DEV Deploy') {
+      stage ('Tag latest image') {
+        // time-based because Jenkins is running ephmerally, so current build number can be reset
+        def current_image_tag = "${ocpConfig.projectName}:${artifactVersion}.t${currentBuild.startTimeInMillis}"
+        openshift.tag("${ocpConfig.projectName}:latest", current_image_tag)
+      }
+
+      stage("Verify Rollout") {
         roller.rollout(ocpConfig.projectName, ocpConfig.replicas)
       }
 
@@ -122,9 +111,12 @@ def release(def params) {
         envUtil.processSK(ocpConfig.secretKeyRef, ocpConfig.projectName, data)
       }
 
-      stage("Verify Rollout") {
+      stage("Pull latest image") {
         openshift.raw("tag ${params.containerRegistry}/cicd/${params.image} ${params.image}")
         openshift.raw("import-image ${params.image} --confirm ${params.containerRegistry}/cicd/${params.image} --insecure")
+      }
+
+      stage("Verify Rollout") {
         roller.rollout(ocpConfig.projectName, ocpConfig.replicas)
   		}
 
