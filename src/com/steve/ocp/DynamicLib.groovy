@@ -8,6 +8,8 @@ def process(def params) {
   def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
   def envUtil = load "src/com/steve/ocp/util/EnvUtil.groovy"
   def buildUtil = load "src/com/steve/ocp/util/BuildUtil.groovy"
+  def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+
 
   // apply labels to our secret so they sync with Jenkins
   openshift.withCluster() {
@@ -15,36 +17,29 @@ def process(def params) {
       openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
 
       stage('Checkout') {
-        def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
         gitter.checkout(params.gitUrl, params.gitBranch, "${openshift.project()}-${params.gitSA}")
-        params['gitDigest'] = gitter.digest()
       }
-    }
-  }
 
-  pom = readMavenPom file: 'pom.xml'
+      pom = readMavenPom file: 'pom.xml'
 
-  ocpConfig = fileLoader.readConfig("./ocp/config.yml")
-  // load in the Jenkins parameters into the configuration object so we have everything in one place
-	ocpConfig << params
+      ocpConfig = fileLoader.readConfig("./ocp/config.yml")
+      // load in the Jenkins parameters into the configuration object so we have everything in one place
+    	ocpConfig << params
 
-  def profile = pom.profiles.find { it.id == "ocp" }
-  def p = profile ? "-P ${profile.id}" : ""
+      def profile = pom.profiles.find { it.id == "ocp" }
+      def p = profile ? "-P ${profile.id}" : ""
 
-  stage('Build') {
-    sh "mvn clean compile -DskipTests $p"
-  }
+      stage('Build') {
+        sh "mvn clean compile -DskipTests $p"
+      }
 
-  stage('Test') {
-    sh "mvn test $p"
-  }
+      stage('Test') {
+        sh "mvn test $p"
+      }
 
-  stage('Package') {
-    sh "mvn -Dmaven.test.failure.ignore package -DskipTests $p"
-  }
-
-  openshift.withCluster() {
-    openshift.withProject() {
+      stage('Package') {
+        sh "mvn -Dmaven.test.failure.ignore package -DskipTests $p"
+      }
 
       stage("Process CM/SK") {
         Object data = fileLoader.readConfigMap("ocp/dev/${ocpConfig.configMapRef}.yml")
@@ -55,7 +50,7 @@ def process(def params) {
       }
 
 			stage('Build Image') {
-        def envmap = ["GIT_REF": ocpConfig.gitDigest, "GIT_URL": params.gitUrl]
+        def envmap = ["GIT_REF": gitter.digest(), "GIT_URL": params.gitUrl]
         buildUtil.start(ocpConfig.projectName, pom.artifactId, envmap)
 			}
 
