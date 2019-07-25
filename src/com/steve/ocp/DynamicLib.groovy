@@ -57,7 +57,7 @@ def process(def params) {
       }
 
       def bc = openshift.selector("buildconfig", "${ocpConfig.projectName}")
-			stage('OCP Upload Binary') {
+			stage('Build Image') {
         def envmap = ["GIT_REF": ocpConfig.gitDigest, "GIT_URL": params.gitUrl]
         buildUtil.start(ocpConfig.projectName, artifactName, envmap)
 			}
