@@ -22,8 +22,6 @@ def process(def params) {
   }
 
   pom = readMavenPom file: 'pom.xml'
-  artifactName = "${pom.artifactId}"
-  artifactVersion = "${pom.version}"
 
   ocpConfig = fileLoader.readConfig("./ocp/config.yml")
   // load in the Jenkins parameters into the configuration object so we have everything in one place
@@ -59,7 +57,7 @@ def process(def params) {
       def bc = openshift.selector("buildconfig", "${ocpConfig.projectName}")
 			stage('Build Image') {
         def envmap = ["GIT_REF": ocpConfig.gitDigest, "GIT_URL": params.gitUrl]
-        buildUtil.start(ocpConfig.projectName, artifactName, envmap)
+        buildUtil.start(ocpConfig.projectName, pom.artifactId, envmap)
 			}
 
       stage ('Verify Build') {
@@ -68,7 +66,7 @@ def process(def params) {
 
       stage ('Tag latest image') {
         // time-based because Jenkins is running ephmerally, so current build number can be reset
-        def current_image_tag = "${ocpConfig.projectName}:${artifactVersion}.t${currentBuild.startTimeInMillis}"
+        def current_image_tag = "${ocpConfig.projectName}:${pom.version}.t${currentBuild.startTimeInMillis}"
         openshift.tag("${ocpConfig.projectName}:latest", current_image_tag)
       }
 
@@ -162,7 +160,6 @@ def promote(def params) {
           gitter.checkoutFromImage("${params.containerRegistry}/cicd/${params.image}", "${openshift.project()}-${params.gitSA}")
 
           pom = readMavenPom file: 'pom.xml'
-          artifactVersion = "${pom.version}"
 
           withCredentials([string(credentialsId: "${openshift.project()}-${params.containerRegistryApiKey}", variable: 'APIKEY')]) {
 
@@ -177,7 +174,7 @@ def promote(def params) {
             -d '{ "targetRepo" : "docker-release-local",
                   "dockerRepository" : "cicd/$img",
                   "tag": "$tag",
-                  "targetTag": "$artifactVersion",
+                  "targetTag": "${pom.version}",
                   "copy" : true}'
                """
          }
