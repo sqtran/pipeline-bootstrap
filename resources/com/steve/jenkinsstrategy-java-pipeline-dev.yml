@@ -35,7 +35,7 @@ objects:
           forcePull: true
           from:
             kind: ImageStreamTag
-            name: openjdk18-openshift:latest
+            name: redhat-openjdk18-openshift:1.4
             namespace: openshift
       successfulBuildsHistoryLimit: 5
       triggers: []
