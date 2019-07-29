@@ -33,35 +33,21 @@ objects:
         jenkinsPipelineStrategy:
           jenkinsfile: |-
               pipeline {
-                  agent any
-                  stages {
-                      stage("Check Pod Configs") {
-                        steps {
-                          script {
-                            openshift.withCluster() {
-                              openshift.withProject(){
-                                openshift.raw("apply -f https://raw.githubusercontent.com/sqtran/pipeline-bootstrap/dynamic-lib/resources/com/steve/jenkinsPodTemplate4x.yml")
-                              }
-                            }
-                          }
-                        }
-                      }
+                agent any
+                stages {
+                  stage("Initialize") {
+                    steps {
+                      script {
 
-                      stage("Wait for Pod") {
-                          agent {
-                              label 'maven'
-                          }
-                          steps {
-                              script {
-                                git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
-                                def code = load 'src/com/steve/ocp/DynamicLib.groovy'
+                        git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
+                        def code = load 'src/com/steve/ocp/EntryLibrary.groovy'
 
-                                def params = ['projectName' : "${APP_NAME}", 'image': "${APP_NAME}:${IMAGE_TAG}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry': "${CONTAINER_REGISTRY}", "containerRegistryApiKey": "${CONTAINER_REGISTRY_SECRET}"]
-                                code.release(params)
-                              }
-                          }
+                        def params = ['workflow': 'release', 'projectName' : "${APP_NAME}", 'gitBranch': "${GIT_BRANCH}", 'gitUrl': "${GIT_REPOSITORY}", 'gitSA': "${BUILD_SECRET}"]
+                        code.initialize(params)
                       }
+                    }
                   }
+                }
               }
         type: JenkinsPipeline
       successfulBuildsHistoryLimit: 5
@@ -81,36 +67,22 @@ objects:
         jenkinsPipelineStrategy:
           jenkinsfile: |-
               pipeline {
-                  agent any
-                  stages {
-                      stage("Check Pod Configs") {
-                        steps {
-                          script {
-                            openshift.withCluster() {
-                              openshift.withProject(){
-                                openshift.raw("apply -f https://raw.githubusercontent.com/sqtran/pipeline-bootstrap/dynamic-lib/resources/com/steve/jenkinsPodTemplate4x.yml")
-                              }
-                            }
-                          }
-                        }
+                agent any
+                stages {
+                  stage("Initialize") {
+                    steps {
+                      script {
+
+                        git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
+                        def code = load 'src/com/steve/ocp/EntryLibrary.groovy'
+
+                        def params = ['workflow': 'promote', 'projectName' : "${APP_NAME}", 'gitBranch': "${GIT_BRANCH}", 'gitUrl': "${GIT_REPOSITORY}", 'gitSA': "${BUILD_SECRET}"]
+                        code.initialize(params)
                       }
-
-                      stage("Wait for Pod") {
-                          agent {
-                              label 'maven'
-                          }
-                          steps {
-                              script {
-                                git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
-                                def code = load 'src/com/steve/ocp/DynamicLib.groovy'
-
-                                def params = ['projectName' : "${APP_NAME}", 'image': "${APP_NAME}:${IMAGE_TAG}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry': "${CONTAINER_REGISTRY}", "containerRegistryApiKey": "${CONTAINER_REGISTRY_SECRET}"]
-                                code.promote(params)
-                              } // end script
-                          } // end steps
-                      } // end stage
-                  } // end stages
-              } //end pipeline
+                    }
+                  }
+                }
+              }
         type: JenkinsPipeline
       successfulBuildsHistoryLimit: 5
 

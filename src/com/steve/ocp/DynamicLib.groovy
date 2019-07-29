@@ -10,7 +10,6 @@ def process(def params) {
   def buildUtil = load "src/com/steve/ocp/util/BuildUtil.groovy"
   def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
 
-
   // apply labels to our secret so they sync with Jenkins
   openshift.withCluster() {
     openshift.withProject() {
