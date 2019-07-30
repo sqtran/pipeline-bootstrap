@@ -9,7 +9,6 @@ def initialize(def params) {
         def template = "resources/com/steve/jenkinsPodTemplate.yml"
         if (params?.workflow?.trim() != "build") {
           template = "resources/com/steve/jenkinsPodTemplate4x.yml"
-
         }
         openshift.raw("apply -f $template")
       }
@@ -19,7 +18,7 @@ def initialize(def params) {
   stage("Wait for Pod") {
     node("maven") {
       // load scripts again, but this time on maven node
-      git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "dynamic-lib"
+      git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "stable"
       def code = load 'src/com/steve/ocp/DynamicLib.groovy'
 
       switch (params?.workflow?.trim()) {
