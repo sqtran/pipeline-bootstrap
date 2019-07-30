@@ -22,13 +22,6 @@ objects:
       failedBuildsHistoryLimit": 5
       nodeSelector: ~
       runPolicy: Serial
-      source:
-        git:
-          ref: "${GIT_BRANCH}"
-          uri: "${GIT_REPOSITORY}"
-        sourceSecret:
-          name: bitbucket-secret
-        type: Git
       strategy:
         jenkinsPipelineStrategy:
           jenkinsfile: |-
