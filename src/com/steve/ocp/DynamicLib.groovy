@@ -96,9 +96,11 @@ def release(def params) {
       // apply labels to our secret so they sync with Jenkins
       openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
 
+      def image = "${params.projectName}:${params.imageTag}"
+
       stage('Get Configs from SCM') {
         def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
-        gitter.checkoutFromImage("${params.containerRegistry}/cicd/${params.image}", "${openshift.project()}-${params.gitSA}")
+        gitter.checkoutFromImage("${params.containerRegistry}/cicd/$image", "${openshift.project()}-${params.gitSA}")
       }
 
       ocpConfig = fileLoader.readConfig("./ocp/config.yml")
@@ -113,8 +115,8 @@ def release(def params) {
       }
 
       stage("Pull latest image") {
-        openshift.raw("tag ${params.containerRegistry}/cicd/${params.image} ${params.image}")
-        openshift.raw("import-image ${params.image} --confirm ${params.containerRegistry}/cicd/${params.image} --insecure")
+        openshift.raw("tag ${params.containerRegistry}/cicd/$image $image")
+        openshift.raw("import-image $image --confirm ${params.containerRegistry}/cicd/$image --insecure")
       }
 
       stage("Verify Rollout") {
@@ -137,6 +139,7 @@ def promote(def params) {
 
       def userInput = true
       def timeoutRejected = false
+      def image = "${params.projectName}:${params.imageTag}"
 
       try {
          stage("Approval") {
@@ -160,10 +163,10 @@ def promote(def params) {
           def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
           def artifactoryUtil = load "src/com/steve/ocp/util/ArtifactoryUtil.groovy"
 
-          gitter.checkoutFromImage("${params.containerRegistry}/cicd/${params.image}", "${openshift.project()}-${params.gitSA}")
+          gitter.checkoutFromImage("${params.containerRegistry}/cicd/$image", "${openshift.project()}-${params.gitSA}")
 
           pom = readMavenPom file: 'pom.xml'
-          artifactoryUtil.tag( "${openshift.project()}-${params.containerRegistryApiKey}", params.containerRegistry, params.image, pom.version )
+          artifactoryUtil.tag( "${openshift.project()}-${params.containerRegistryApiKey}", params.containerRegistry, image, pom.version )
 
           echo "this was successful"
 
