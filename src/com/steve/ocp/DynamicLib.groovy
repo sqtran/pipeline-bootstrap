@@ -36,6 +36,15 @@ def process(def params) {
         sh "mvn test $p"
       }
 
+      stage('Sonar Scan') {
+        if(p) {
+          sh "mvn sonar:sonar -DskipTests $p -P coverage"
+        }
+        else {
+          echo "Sonar scans skipped"
+        }
+      }
+
       stage('Package') {
         sh "mvn -Dmaven.test.failure.ignore package -DskipTests $p"
       }
