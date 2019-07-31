@@ -32,7 +32,7 @@ def initialize(def params) {
           code.promote(params)
           break
         case ~/production/:
-          code.promotion(params)
+          code.production(params)
           break
         default:
           throw new RuntimeException("Invalid workflow specified '${params.workflow}'")

@@ -195,9 +195,11 @@ def production(def params) {
       openshift.raw("label secret ${params.gitSA} credential.sync.jenkins.openshift.io=true --overwrite")
       openshift.raw("label secret ${params.containerRegistryApiKey} credential.sync.jenkins.openshift.io=true --overwrite")
 
+      def image = "${params.projectName}:${params.imageTag}"
+
       stage('Get Configs from SCM') {
         def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
-        gitter.checkoutFromImage("${params.containerRegistry}/cicd/${params.image}", "${openshift.project()}-${params.gitSA}")
+        gitter.checkoutFromImage("${params.containerRegistry}/cicd/$image", "${openshift.project()}-${params.gitSA}")
       }
 
       ocpConfig = fileLoader.readConfig("./ocp/config.yml")

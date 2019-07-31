@@ -35,7 +35,7 @@ objects:
                         git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "stable"
                         def code = load 'src/com/steve/ocp/EntryLibrary.groovy'
 
-                        def params = ['workflow': 'production', 'workflowBranch': 'stable', 'projectName' : "${APP_NAME}", 'gitBranch': "${GIT_BRANCH}", 'gitUrl': "${GIT_REPOSITORY}", 'gitSA': "${BUILD_SECRET}"]
+                        def params = ['workflow': 'production', 'workflowBranch': 'stable', 'projectName' : "${APP_NAME}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry' : "${CONTAINER_REGISTRY}", 'containerRegistryApiKey': "${CONTAINER_REGISTRY_SECRET}"]
                         code.initialize(params)
                       }
                     }
@@ -154,8 +154,8 @@ parameters:
     required: true
     value: "docker-repo.build-repo.steve.com"
   -
-    description: "Image Tag to deploy into QA, this must be available in your Container Registry."
-    displayName: "QA Image Tag"
+    description: "Image Tag to deploy into PROD, this must be available in your Container Registry."
+    displayName: "PROD Image Tag"
     name: IMAGE_TAG
     required: true
     value: deploy
