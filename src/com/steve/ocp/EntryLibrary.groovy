@@ -18,7 +18,7 @@ def initialize(def params) {
   stage("Wait for Pod") {
     node("maven") {
       // load scripts again, but this time on maven node
-      git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "stable"
+      git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "${params.workflowBranch}"
       def code = load 'src/com/steve/ocp/DynamicLib.groovy'
 
       switch (params?.workflow?.trim()) {
