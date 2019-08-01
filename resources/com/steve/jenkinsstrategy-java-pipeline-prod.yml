@@ -35,7 +35,7 @@ objects:
                         git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "stable"
                         def code = load 'src/com/steve/ocp/EntryLibrary.groovy'
 
-                        def params = ['workflow': 'production', 'workflowBranch': 'stable', 'projectName' : "${APP_NAME}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry' : "${CONTAINER_REGISTRY}", 'containerRegistryApiKey': "${CONTAINER_REGISTRY_SECRET}"]
+                        def params = ['workflow': 'production', 'workflowBranch': 'stable', 'projectName' : "${APP_NAME}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry' : "${CONTAINER_REGISTRY}", 'containerRegistryApiKey': "${CONTAINER_REGISTRY_SECRET}", 'imageTag' : "${IMAGE_TAG}"]
                         code.initialize(params)
                       }
                     }
