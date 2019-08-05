@@ -85,8 +85,6 @@ objects:
         git:
           ref: "${GIT_BRANCH}"
           uri: "${GIT_REPOSITORY}"
-        sourceSecret:
-          name: bitbucket-secret
         type: Git
       strategy:
         jenkinsPipelineStrategy:
@@ -110,12 +108,7 @@ objects:
               }
         type: JenkinsPipeline
       successfulBuildsHistoryLimit: 5
-      triggers:
-        -
-          imageChange: ~
-          type: ImageChange
-        -
-          type: ConfigChange
+      triggers: []
 
   - apiVersion: v1
     kind: BuildConfig
@@ -234,16 +227,7 @@ objects:
               name: https
               protocol: TCP
           terminationGracePeriodSeconds: 75
-      triggers:
-      - imageChangeParams:
-          automatic: true
-          containerNames:
-          - ${APP_NAME}
-          from:
-            kind: ImageStreamTag
-            name: ${APP_NAME}:latest
-        type: ImageChange
-      - type: ConfigChange
+      triggers: []
 
 parameters:
   -

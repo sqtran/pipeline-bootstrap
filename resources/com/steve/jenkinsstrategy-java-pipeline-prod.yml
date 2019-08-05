@@ -127,6 +127,7 @@ objects:
               name: https
               protocol: TCP
           terminationGracePeriodSeconds: 75
+      triggers: []
 
 parameters:
   -
