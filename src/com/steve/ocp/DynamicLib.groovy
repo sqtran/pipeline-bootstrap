@@ -73,10 +73,8 @@ def process(def params) {
       }
 
       stage("Verify Rollout") {
-        roller.rollout(ocpConfig.projectName, ocpConfig.replicas)
+        roller.rollout(ocpConfig)
       }
-
-      echo "Hello from project ${openshift.project()} in cluster ${openshift.cluster()} with params $ocpConfig"
 
     } // end withProject
   } //end withCluster
@@ -120,7 +118,7 @@ def release(def params) {
       }
 
       stage("Verify Rollout") {
-        roller.rollout(ocpConfig.projectName, ocpConfig.replicas)
+        roller.rollout(ocpConfig)
   		}
 
     } // end withProject
@@ -229,7 +227,7 @@ def production(def params) {
 
       stage("Verify Rollout") {
         openshift.raw("""patch dc ${ocpConfig.projectName} --patch='{"spec":{"template":{"spec":{"containers":[{"name": "${params.projectName}", "image":"docker-registry.default.svc:5000/${openshift.project()}/${params.projectName}:$latestTag"}]}}}}'""")
-        roller.rollout(ocpConfig.projectName, ocpConfig.replicas)
+        roller.rollout(ocpConfig)
       }
 
     } // end withProject
