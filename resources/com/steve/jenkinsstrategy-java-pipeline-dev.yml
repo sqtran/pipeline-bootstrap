@@ -227,7 +227,14 @@ objects:
               name: https
               protocol: TCP
           terminationGracePeriodSeconds: 75
-      triggers: []
+      triggers:
+      - imageChangeParams:
+          containerNames:
+          - ${APP_NAME}
+          from:
+            kind: ImageStreamTag
+            name: ${APP_NAME}:latest
+        type: ImageChange
 
 parameters:
   -
