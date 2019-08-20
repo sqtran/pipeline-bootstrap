@@ -32,15 +32,18 @@ Images in the external image registry can be overwritten by the pipeline.  The p
 - The templates are loaded into the `openshift` namespace so they are globally available from existing namespaces.  Each template is environment specific, so you only need to load one per environment.
 
 - In the DEV environment, the openshift3/jenkins-1-rhel7:latest imagestream is required in the `openshift` namespace.
-  - Example
   ```bash
   oc import-image openshift3/jenkins-agent-maven-35-rhel7:v3.11 --confirm --from {your_registry}/openshift3/jenkins-agent-maven-35-rhel7:v3.11 -n openshift
   ```
 
-- In QA and PROD, the openshift4/ose-jenkins-agent-maven:latest is required in the `openshift` namespace. *(The pipeline leverages newer features with the openshift `cli` tool)*
-  - Example
+- In QA and PROD, the openshift4/ose-jenkins-agent-maven:latest is required in the `openshift` namespace. *(The pipeline leverages newer features with the openshift `cli` tool)*   
   ```bash
   oc import-image ose-jenkins-agent-maven:latest --confirm --from {your_registry}/openshift4/ose-jenkins-agent-maven:latest -n openshift
+  ```
+
+- Import the actual pipeline manifest with the following.
+  ```bash
+  oc create -f resources/com/steve/jenkinsstrategy-java-pipeline-{dev,qa,prod}.yml -n openshift
   ```
 
 ### Onboarding Prerequisites
@@ -54,6 +57,7 @@ Images in the external image registry can be overwritten by the pipeline.  The p
   - **DEV** : the External Image Registry credentials must be configured as an `Image Secret` with username/password
   - **QA/PROD** : the External Image Registry credentials must be configured as a `Generic Secret` with its key named `secrettext`.  The value of this field is the JFrog API Key (this is Artifactory specific, but may change)
 
+- See [Project Specific Prerequisites](README_APPS.md) for additional information about how the application needs to be configured.
 
 ### Image Tagging
 
