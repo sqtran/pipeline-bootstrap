@@ -13,7 +13,7 @@ data:
         <inheritFrom></inheritFrom>
         <name>maven</name>
         <instanceCap>2147483647</instanceCap>
-        <idleMinutes>10</idleMinutes>
+        <idleMinutes>0</idleMinutes>
         <label>maven</label>
         <serviceAccount>jenkins</serviceAccount>
         <nodeSelector></nodeSelector>
