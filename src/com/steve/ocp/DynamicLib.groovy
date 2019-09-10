@@ -50,6 +50,8 @@ def process(def params) {
       }
 
       stage("Process CM/SK") {
+        envUtil.resetEnvs(ocpConfig.projectName)
+
         Object data = fileLoader.readConfigMap("ocp/dev/${ocpConfig.configMapRef}.yml")
         envUtil.processCM(ocpConfig.configMapRef, ocpConfig.projectName, data)
 
@@ -105,6 +107,8 @@ def release(def params) {
       ocpConfig << params
 
       stage("Process CM/SK") {
+        envUtil.resetEnvs(ocpConfig.projectName)
+
         Object data = fileLoader.readConfigMap("ocp/qa/${ocpConfig.configMapRef}.yml")
         envUtil.processCM(ocpConfig.configMapRef, ocpConfig.projectName, data)
 
@@ -203,6 +207,8 @@ def production(def params) {
       ocpConfig << params
 
       stage("Process CM/SK") {
+        envUtil.resetEnvs(ocpConfig.projectName)
+
         Object data = fileLoader.readConfigMap("ocp/prod/${ocpConfig.configMapRef}.yml")
         envUtil.processCM(ocpConfig.configMapRef, ocpConfig.projectName, data)
 

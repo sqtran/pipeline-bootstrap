@@ -1,5 +1,12 @@
 package com.steve.ocp.util
 
+def resetEnvs(def dcName, def containerName = null) {
+  if(containerName == null) {
+    containerName = dcName
+  }
+  openshift.raw(""" patch dc/$dcName  -p  '{"spec": {"template": {"spec": {"containers": [{"name": "$containerName", "env": null}] }}}}'  """)
+}
+
 def processCM(def cmName, def dcName, def data) {
   process(cmName, dcName, data, "configmap")
 }
