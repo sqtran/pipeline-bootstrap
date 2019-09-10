@@ -113,7 +113,6 @@ def release(def params) {
       }
 
       stage("Pull latest image") {
-        openshift.raw("tag ${params.containerRegistry}/cicd/$image $image")
         openshift.raw("import-image $image --confirm ${params.containerRegistry}/cicd/$image --insecure")
       }
 
