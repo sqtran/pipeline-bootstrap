@@ -117,7 +117,22 @@ def release(def params) {
       }
 
       stage("Pull latest image") {
-        openshift.raw("import-image $image --confirm ${params.containerRegistry}/cicd/$image --insecure")
+
+        def foundIt = false
+        openshift.selector("imagestream", ocpConfig.projectName).object().spec.tags.each {
+          if(it.name == "deploy") {
+            foundIt = true
+          }
+        }
+
+        if(!foundIt) {
+          // do it this way on our first build
+          openshift.raw("tag ${params.containerRegistry}/cicd/$image $image --insecure")
+        }
+        else {
+          openshift.raw("import-image $image --confirm ${params.containerRegistry}/cicd/$image --insecure")
+        }
+
       }
 
       stage("Verify Rollout") {
