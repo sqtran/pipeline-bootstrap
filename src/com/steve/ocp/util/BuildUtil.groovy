@@ -18,7 +18,7 @@ def verify(def buildConfig) {
   // loops through and finds the last build number
   def latestBuild = -1
   builds.withEach {
-    def buildNum = it.object().metadata.annotations["openshift.io/build.number"]
+    def buildNum = it.object().metadata.annotations["openshift.io/build.number"] as int
     if(buildNum > latestBuild) {
       latestBuild = buildNum
     }
@@ -35,7 +35,7 @@ def verify(def buildConfig) {
 
         // 'it' is now bound to a Selector selecting a single object for this iteration.  Let's model it in Groovy to check its status.
         def buildModel = it.object()
-        def buildNum = buildModel.metadata.annotations["openshift.io/build.number"]
+        def buildNum = buildModel.metadata.annotations["openshift.io/build.number"] as int
         if( buildNum != latestBuild) {
           // not the latest build, we don't care about this one
           return
