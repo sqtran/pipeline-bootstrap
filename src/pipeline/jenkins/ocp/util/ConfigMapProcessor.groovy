@@ -1,6 +1,6 @@
-package com.steve.ocp.util
+package pipeline.jenkins.ocp.util
 
-import com.steve.ocp.util.FileLoader
+import pipeline.jenkins.ocp.util.FileLoader
 
 def processCMSK(def ocpConfig, def env) {
   openshift.withCluster("ocp-$env") {

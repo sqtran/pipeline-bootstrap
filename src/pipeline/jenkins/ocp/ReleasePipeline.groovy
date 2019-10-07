@@ -1,8 +1,8 @@
-package com.steve.ocp
+package pipeline.jenkins.ocp
 
-import com.steve.ocp.util.FileLoader
-import com.steve.ocp.util.TemplateProcessor
-import com.steve.ocp.util.ConfigMapProcessor
+import pipeline.jenkins.ocp.util.FileLoader
+import pipeline.jenkins.ocp.util.TemplateProcessor
+import pipeline.jenkins.ocp.util.ConfigMapProcessor
 
 def getLastSuccess() {
 	def lastSuccessfulBuildID = 0

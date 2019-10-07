@@ -1,4 +1,4 @@
-package com.steve.ocp.util
+package pipeline.jenkins.ocp.util
 
 def checkout(def url, def branch, def credentials) {
   try {

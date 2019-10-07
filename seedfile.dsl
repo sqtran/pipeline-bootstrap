@@ -12,7 +12,7 @@ pipelineJob(pipelineId) {
 
 node {
   def params = ['projectName' : "$PROJECT_NAME", 'ocpnamespace' : "$OCP_NAMESPACE", 'gitBranch': "$GIT_BRANCH", 'gitUrl': "$GIT_URL"]
-  new com.steve.ocp.BuildPipeline().process(params)
+  new pipeline.jenkins.ocp.BuildPipeline().process(params)
 }"""
       )
       sandbox()
@@ -74,7 +74,7 @@ try {
 """@Library('PipelineBootstrap@master') _
 node {
   def params = ['projectName' : "$PROJECT_NAME", 'ocpnamespace' : "$OCP_NAMESPACE", 'selectedImageTag' : "\$IMAGE_TAG", 'selectedDeploymentEnv' : "\$ENVS", 'gitUrl': "$GIT_URL"]
-  new com.steve.ocp.ReleasePipeline().process(params)
+  new pipeline.jenkins.ocp.ReleasePipeline().process(params)
 }"""
       )
       sandbox()

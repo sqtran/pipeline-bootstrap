@@ -43,7 +43,7 @@ Images in the external image registry can be overwritten by the pipeline.  The p
 
 - Import the actual pipeline manifest with the following.
   ```bash
-  oc create -f resources/com/steve/jenkinsstrategy-java-pipeline-{dev,qa,prod}.yml -n openshift
+  oc create -f resources/pipeline/jenkins/jenkinsstrategy-java-pipeline-{dev,qa,prod}.yml -n openshift
   ```
 
 ### Onboarding Prerequisites

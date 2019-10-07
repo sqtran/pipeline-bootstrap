@@ -1,4 +1,4 @@
-package com.steve.ocp.util
+package pipeline.jenkins.ocp.util
 
 // image is the format imageName:tagName
 def tag(def credentials, def registry, def image, def destTag) {

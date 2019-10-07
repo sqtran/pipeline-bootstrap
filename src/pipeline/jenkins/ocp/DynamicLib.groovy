@@ -1,14 +1,14 @@
 
-package com.steve.ocp
+package pipeline.jenkins.ocp
 
 // builds an image
 def process(def params) {
 
-  def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
-  def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
-  def envUtil = load "src/com/steve/ocp/util/EnvUtil.groovy"
-  def buildUtil = load "src/com/steve/ocp/util/BuildUtil.groovy"
-  def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+  def fileLoader = load "src/pipeline/jenkins/ocp/util/FileLoader.groovy"
+  def roller = load "src/pipeline/jenkins/ocp/util/RolloutUtil.groovy"
+  def envUtil = load "src/pipeline/jenkins/ocp/util/EnvUtil.groovy"
+  def buildUtil = load "src/pipeline/jenkins/ocp/util/BuildUtil.groovy"
+  def gitter = load "src/pipeline/jenkins/ocp/util/GitUtil.groovy"
 
   // apply labels to our secret so they sync with Jenkins
   openshift.withCluster() {
@@ -86,9 +86,9 @@ def process(def params) {
 // Takes the "deploy" tag from Artifactory and rolls it out into QA
 def release(def params) {
 
-  def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
-  def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
-  def envUtil = load "src/com/steve/ocp/util/EnvUtil.groovy"
+  def fileLoader = load "src/pipeline/jenkins/ocp/util/FileLoader.groovy"
+  def roller = load "src/pipeline/jenkins/ocp/util/RolloutUtil.groovy"
+  def envUtil = load "src/pipeline/jenkins/ocp/util/EnvUtil.groovy"
 
   openshift.withCluster() {
     openshift.withProject() {
@@ -99,7 +99,7 @@ def release(def params) {
       def image = "${params.projectName}:${params.imageTag}"
 
       stage('Get Configs from SCM') {
-        def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+        def gitter = load "src/pipeline/jenkins/ocp/util/GitUtil.groovy"
         gitter.checkoutFromImage("${params.containerRegistry}/cicd/$image", "${openshift.project()}-${params.gitSA}")
       }
 
@@ -176,8 +176,8 @@ def promote(def params) {
            echo "timedout or rejected by user"
        } else if (userInput) {
 
-          def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
-          def artifactoryUtil = load "src/com/steve/ocp/util/ArtifactoryUtil.groovy"
+          def gitter = load "src/pipeline/jenkins/ocp/util/GitUtil.groovy"
+          def artifactoryUtil = load "src/pipeline/jenkins/ocp/util/ArtifactoryUtil.groovy"
 
           gitter.checkoutFromImage("${params.containerRegistry}/cicd/$image", "${openshift.project()}-${params.gitSA}")
 
@@ -199,10 +199,10 @@ def promote(def params) {
 // Pulls image from Artifactory and rolls it out in production
 def production(def params) {
 
-  def fileLoader = load "src/com/steve/ocp/util/FileLoader.groovy"
-  def roller = load "src/com/steve/ocp/util/RolloutUtil.groovy"
-  def envUtil = load "src/com/steve/ocp/util/EnvUtil.groovy"
-  def artifactoryUtil = load "src/com/steve/ocp/util/ArtifactoryUtil.groovy"
+  def fileLoader = load "src/pipeline/jenkins/ocp/util/FileLoader.groovy"
+  def roller = load "src/pipeline/jenkins/ocp/util/RolloutUtil.groovy"
+  def envUtil = load "src/pipeline/jenkins/ocp/util/EnvUtil.groovy"
+  def artifactoryUtil = load "src/pipeline/jenkins/ocp/util/ArtifactoryUtil.groovy"
 
   openshift.withCluster() {
     openshift.withProject() {
@@ -214,7 +214,7 @@ def production(def params) {
       def image = "${params.projectName}:${params.imageTag}"
 
       stage('Get Configs from SCM') {
-        def gitter = load "src/com/steve/ocp/util/GitUtil.groovy"
+        def gitter = load "src/pipeline/jenkins/ocp/util/GitUtil.groovy"
         gitter.checkoutFromImage("${params.containerRegistry}/cicd/$image", "${openshift.project()}-${params.gitSA}")
       }
 

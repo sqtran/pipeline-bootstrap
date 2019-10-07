@@ -1,4 +1,4 @@
-package com.steve.ocp.util
+package pipeline.jenkins.ocp.util
 
 def sanitizePipelineInput(def params) {
   def clean = [:]

@@ -1,4 +1,4 @@
-package com.steve.ocp.util
+package pipeline.jenkins.ocp.util
 
 import groovy.transform.Field
 

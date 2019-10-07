@@ -1,11 +1,11 @@
-package com.steve.ocp
+package pipeline.jenkins.ocp
 
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
-import com.steve.ocp.util.FileLoader
-import com.steve.ocp.util.Sanitizer
-import com.steve.ocp.util.TemplateProcessor
-import com.steve.ocp.util.ConfigMapProcessor
+import pipeline.jenkins.ocp.util.FileLoader
+import pipeline.jenkins.ocp.util.Sanitizer
+import pipeline.jenkins.util.TemplateProcessor
+import pipeline.jenkins.util.ConfigMapProcessor
 
 def stage(name, execute, block) {
     return stage(name, execute ? block : {

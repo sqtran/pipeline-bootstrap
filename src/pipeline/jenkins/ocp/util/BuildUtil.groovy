@@ -1,4 +1,4 @@
-package com.steve.ocp.util
+package pipeline.jenkins.ocp.util
 
 def start(def buildConfig, def artifactName, def envs) {
   def envstring = envs.inject([]) { result, entry ->

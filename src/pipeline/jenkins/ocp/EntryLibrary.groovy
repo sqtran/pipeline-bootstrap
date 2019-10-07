@@ -1,14 +1,14 @@
 
-package com.steve.ocp
+package pipeline.jenkins.ocp
 
 def initialize(def params) {
 
   openshift.withCluster() {
     openshift.withProject() {
       stage("Apply Pod Configs") {
-        def template = "resources/com/steve/jenkinsPodTemplate.yml"
+        def template = "resources/pipeline/jenkins/jenkinsPodTemplate.yml"
         if (params?.workflow?.trim() != "build") {
-          template = "resources/com/steve/jenkinsPodTemplate4x.yml"
+          template = "resources/pipeline/jenkins/jenkinsPodTemplate4x.yml"
         }
         openshift.raw("apply -f $template")
       }
@@ -19,7 +19,7 @@ def initialize(def params) {
     node("maven") {
       // load scripts again, but this time on maven node
       git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "${params.workflowBranch}"
-      def code = load 'src/com/steve/ocp/DynamicLib.groovy'
+      def code = load 'src/pipeline/jenkins/ocp/DynamicLib.groovy'
 
       switch (params?.workflow?.trim()) {
         case ~/build/:

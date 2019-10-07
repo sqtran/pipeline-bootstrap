@@ -1,4 +1,4 @@
-package com.steve.ocp.util
+package pipeline.jenkins.ocp.util
 
 def resetEnvs(def dcName, def containerName = null) {
   if(containerName == null) {

@@ -5,19 +5,19 @@ metadata:
   annotations:
     description: "Application template for SpringBoot applications built using an ephemeral Jenkins Pipeline"
     iconClass: icon-jenkins
-    openshift.io/display-name: JenkinsStrategy Java Pipeline for PROD
+    openshift.io/display-name: JenkinsStrategy Java Pipeline for QA
     template.openshift.io/bindable: "false"
     tags: "java,springboot,jenkins-ci,jenkins"
     version: "1.0"
-  name: jenkinsstrategy-java-pipeline-prod
+  name: jenkinsstrategy-java-pipeline-qa
 objects:
   - apiVersion: v1
     kind: BuildConfig
     metadata:
       labels:
         app: "${APP_NAME}"
-        maker: jenkinsstrategy-java-pipeline-prod
-      name: "${APP_NAME}-pipeline-prod"
+        maker: jenkinsstrategy-java-pipeline-qa
+      name: "${APP_NAME}-pipeline-qa"
     spec:
       failedBuildsHistoryLimit": 5
       nodeSelector: ~
@@ -33,9 +33,43 @@ objects:
                       script {
 
                         git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "stable"
-                        def code = load 'src/com/steve/ocp/EntryLibrary.groovy'
+                        def code = load 'src/pipeline/jenkins/ocp/EntryLibrary.groovy'
 
-                        def params = ['workflow': 'production', 'workflowBranch': 'stable', 'projectName' : "${APP_NAME}", 'gitSA': "${BUILD_SECRET}", 'containerRegistry' : "${CONTAINER_REGISTRY}", 'containerRegistryApiKey': "${CONTAINER_REGISTRY_SECRET}", 'imageTag' : "${IMAGE_TAG}"]
+                        def params = ['workflow': 'release', 'workflowBranch': 'stable', 'projectName' : "${APP_NAME}", 'gitSA': "${BUILD_SECRET}", 'imageTag' : "${IMAGE_TAG}", 'containerRegistry' : "${CONTAINER_REGISTRY}" ]
+                        code.initialize(params)
+                      }
+                    }
+                  }
+                }
+              }
+        type: JenkinsPipeline
+      successfulBuildsHistoryLimit: 5
+
+  - apiVersion: v1
+    kind: BuildConfig
+    metadata:
+      labels:
+        app: "${APP_NAME}"
+        maker: jenkinsstrategy-java-pipeline-qa
+      name: "${APP_NAME}-pipeline-qa-release"
+    spec:
+      failedBuildsHistoryLimit": 5
+      nodeSelector: ~
+      runPolicy: Serial
+      strategy:
+        jenkinsPipelineStrategy:
+          jenkinsfile: |-
+              pipeline {
+                agent any
+                stages {
+                  stage("Initialize") {
+                    steps {
+                      script {
+
+                        git url: "https://github.com/sqtran/pipeline-bootstrap", branch: "stable"
+                        def code = load 'src/pipeline/jenkins/ocp/EntryLibrary.groovy'
+
+                        def params = ['workflow': 'promote', 'workflowBranch': 'stable', 'projectName' : "${APP_NAME}", 'gitSA': "${BUILD_SECRET}", 'imageTag' : "${IMAGE_TAG}", 'containerRegistry' : "${CONTAINER_REGISTRY}", 'containerRegistryApiKey': "${CONTAINER_REGISTRY_SECRET}"]
                         code.initialize(params)
                       }
                     }
@@ -50,7 +84,7 @@ objects:
     metadata:
       labels:
         app: "${APP_NAME}"
-        maker: jenkinsstrategy-java-pipeline-prod
+        maker: jenkinsstrategy-java-pipeline-qa
       name: "${APP_NAME}"
     spec:
       lookupPolicy:
@@ -63,7 +97,7 @@ objects:
         description: This is a service.
       labels:
         app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline-prod
+        maker: jenkinsstrategy-java-pipeline-qa
       name: ${APP_NAME}
     spec:
       ports:
@@ -89,7 +123,7 @@ objects:
         description: This is a Deployment Configuration.
       labels:
         app: ${APP_NAME}
-        maker: jenkinsstrategy-java-pipeline-prod
+        maker: jenkinsstrategy-java-pipeline-qa
       name: ${APP_NAME}
     spec:
       replicas: 0
@@ -155,8 +189,8 @@ parameters:
     required: true
     value: "docker-repo.build-repo.steve.com"
   -
-    description: "Image Tag to deploy into PROD, this must be available in your Container Registry."
-    displayName: "PROD Image Tag"
+    description: "Image Tag to deploy into QA, this must be available in your Container Registry."
+    displayName: "QA Image Tag"
     name: IMAGE_TAG
     required: true
     value: deploy
