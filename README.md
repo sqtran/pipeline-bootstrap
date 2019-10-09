@@ -86,5 +86,4 @@ The idle time of the pods is set to 10 minutes, so that subsequent builds/deploy
 - If you need to clean up all the generated objects, perhaps you want to rerun the template, you can run the following to find all the associated objects and delete them.
     - Example
     ```bash
-    oc get all,configmap,secret -l app={your_app_name}
-    ```
+    oc get all,configmap,secret -l app={your_app_name}```
